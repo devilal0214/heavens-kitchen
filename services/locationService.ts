@@ -26,15 +26,25 @@ export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2
   return R * c; // Distance in km
 }
 
-export function findNearestOutlet(loc: Coordinates, outlets: Outlet[]): { outlet: Outlet, distance: number } {
+export function findNearestOutlet(loc: Coordinates, outlets: Outlet[]): { outlet: Outlet, distance: number } | null {
+  if (!outlets || outlets.length === 0) {
+    return null;
+  }
+  
   let nearest = outlets[0];
+  if (!nearest || !nearest.coordinates) {
+    return null;
+  }
+  
   let minDist = calculateDistance(loc.lat, loc.lng, nearest.coordinates.lat, nearest.coordinates.lng);
 
   outlets.forEach(o => {
-    const d = calculateDistance(loc.lat, loc.lng, o.coordinates.lat, o.coordinates.lng);
-    if (d < minDist) {
-      minDist = d;
-      nearest = o;
+    if (o && o.coordinates) {
+      const d = calculateDistance(loc.lat, loc.lng, o.coordinates.lat, o.coordinates.lng);
+      if (d < minDist) {
+        minDist = d;
+        nearest = o;
+      }
     }
   });
 

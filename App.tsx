@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserRole, Outlet, AppState, Coordinates, MenuItem, Order, OrderStatus, UserProfile } from './types';
 import { RealtimeDB } from './services/dbAdapter';
+import FirestoreDB from './services/firestoreDb';
 import { getUserLocation, findNearestOutlet } from './services/locationService';
 
 // --- COMPONENTS ---
@@ -26,7 +27,7 @@ const App: React.FC = () => {
   const [state, setState] = useState<AppState>({
     currentUser: null,
     staffUser: null,
-    outlets: RealtimeDB.getOutlets(),
+    outlets: [],
     currentOutlet: null,
     userLocation: null,
     cart: []
@@ -39,36 +40,53 @@ const App: React.FC = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        const loc = await getUserLocation();
-        const outlets = RealtimeDB.getOutlets();
-        const { outlet, distance } = findNearestOutlet(loc, outlets);
+        const [loc, outlets] = await Promise.all([
+          getUserLocation(),
+          FirestoreDB.getOutlets()
+        ]);
         
-        setState(prev => ({
-          ...prev,
-          userLocation: loc,
-          outlets: outlets,
-          currentOutlet: outlet
-        }));
-        setDistanceToNearest(distance);
-        setLocationStatus('success');
+        if (outlets.length === 0) {
+          console.warn('No outlets found in database');
+          setLocationStatus('failed');
+          return;
+        }
+        
+        const result = findNearestOutlet(loc, outlets);
+        
+        if (result) {
+          setState(prev => ({
+            ...prev,
+            userLocation: loc,
+            outlets: outlets,
+            currentOutlet: result.outlet
+          }));
+          setDistanceToNearest(result.distance);
+          setLocationStatus('success');
+        } else {
+          setState(prev => ({ ...prev, outlets: outlets, currentOutlet: outlets[0] }));
+          setLocationStatus('failed');
+        }
       } catch (err) {
         console.error("Location detection failed:", err);
         setLocationStatus('failed');
-        const outlets = RealtimeDB.getOutlets();
-        setState(prev => ({ ...prev, outlets: outlets, currentOutlet: outlets[0] }));
+        try {
+          const outlets = await FirestoreDB.getOutlets();
+          setState(prev => ({ ...prev, outlets: outlets, currentOutlet: outlets[0] || null }));
+        } catch (dbErr) {
+          console.error('Failed to load outlets:', dbErr);
+        }
       }
     };
     init();
 
     // Listen for database updates (like new outlets added by admin)
     const unsubscribe = RealtimeDB.onUpdate(() => {
-      const freshOutlets = RealtimeDB.getOutlets();
-      setState(prev => ({
-        ...prev,
-        outlets: freshOutlets,
-        // If current outlet was deleted or changed, we might need logic here, 
-        // but for now we just update the list.
-      }));
+      FirestoreDB.getOutlets().then(freshOutlets => {
+        setState(prev => ({
+          ...prev,
+          outlets: freshOutlets,
+        }));
+      });
     });
     return unsubscribe;
   }, []);
