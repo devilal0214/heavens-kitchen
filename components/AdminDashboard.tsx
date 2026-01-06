@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { RealtimeDB } from '../services/mockDb';
+import { RealtimeDB } from '../services/dbAdapter';
 import { Order, MenuItem, InventoryItem, Outlet, OrderStatus, UserRole, UserProfile, StaffPermissions, GlobalSettings, ManualInvoice, OrderItem } from '../types';
 
 interface AdminDashboardProps {

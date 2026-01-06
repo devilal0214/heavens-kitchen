@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Order, OrderStatus, UserProfile, Outlet } from '../types';
-import { RealtimeDB } from '../services/mockDb';
+import { RealtimeDB } from '../services/dbAdapter';
 
 interface MyOrdersProps {
   user: UserProfile;

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserRole, Outlet, AppState, Coordinates, MenuItem, Order, OrderStatus, UserProfile } from './types';
-import { RealtimeDB } from './services/mockDb';
+import { RealtimeDB } from './services/dbAdapter';
 import { getUserLocation, findNearestOutlet } from './services/locationService';
 
 // --- COMPONENTS ---

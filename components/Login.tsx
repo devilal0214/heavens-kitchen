@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserRole, UserProfile } from '../types';
-import { RealtimeDB } from '../services/mockDb';
+import { RealtimeDB } from '../services/dbAdapter';
 
 interface LoginProps {
   onLogin: (user: UserProfile) => void;

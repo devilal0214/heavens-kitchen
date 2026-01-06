@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Order, InventoryItem, OrderStatus } from '../types';
-import { MockDB } from '../services/mockDb';
+import { MockDB } from '../services/dbAdapter';
 
 const OutletOwnerDashboard: React.FC<{ outletId: string }> = ({ outletId }) => {
   const [orders, setOrders] = useState<Order[]>([]);

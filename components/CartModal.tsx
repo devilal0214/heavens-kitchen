@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { OrderItem, UserProfile, Outlet, GlobalSettings } from '../types';
-import { RealtimeDB } from '../services/mockDb';
+import { RealtimeDB } from '../services/dbAdapter';
 
 interface CartModalProps {
   isOpen: boolean;

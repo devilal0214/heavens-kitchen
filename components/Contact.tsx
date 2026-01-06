@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { RealtimeDB } from '../services/mockDb';
+import { RealtimeDB } from '../services/dbAdapter';
 import { Outlet } from '../types';
 
 const Contact: React.FC = () => {
