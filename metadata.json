@@ -1,0 +1,7 @@
+{
+  "name": "Havens Kitchen",
+  "description": "A premium multi-outlet restaurant management and ordering platform with live location detection, inventory tracking, and specialized admin/owner panels.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
