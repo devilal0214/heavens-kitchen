@@ -4,7 +4,7 @@ import { getAuth } from 'firebase/auth';
 import { getAnalytics } from 'firebase/analytics';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCN9jNYTyJukpErOp17YLi02Y-TEqLDoY4",
   authDomain: "kitchen-c5fc6.firebaseapp.com",
   projectId: "kitchen-c5fc6",
   storageBucket: "kitchen-c5fc6.firebasestorage.app",
