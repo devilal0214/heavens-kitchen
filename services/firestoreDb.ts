@@ -102,7 +102,7 @@ export class FirestoreDB {
     try {
       const q = query(
         collection(db, 'users'),
-        where('role', 'in', [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.OUTLET_OWNER])
+        where('role', 'in', ['SUPER_ADMIN', 'ADMIN', 'OUTLET_OWNER', 'MANAGER'])
       );
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
@@ -140,7 +140,7 @@ export class FirestoreDB {
   // --- CUSTOMERS ---
   static async getCustomers(): Promise<UserProfile[]> {
     try {
-      const q = query(collection(db, 'users'), where('role', '==', UserRole.CUSTOMER));
+      const q = query(collection(db, 'users'), where('role', '==', 'CUSTOMER'));
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
     } catch (error) {

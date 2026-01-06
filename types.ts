@@ -11,7 +11,7 @@ export enum OrderStatus {
 
 export enum UserRole {
   SUPER_ADMIN = 'SUPER_ADMIN',
-  OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY',
+  ADMIN = 'ADMIN',
   OUTLET_OWNER = 'OUTLET_OWNER',
   MANAGER = 'MANAGER',
   CUSTOMER = 'CUSTOMER'
