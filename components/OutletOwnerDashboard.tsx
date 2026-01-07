@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Order, InventoryItem, OrderStatus } from '../types';
-import { MockDB } from '../services/dbAdapter';
+import FirestoreDB from '../services/firestoreDb';
 
 const OutletOwnerDashboard: React.FC<{ outletId: string }> = ({ outletId }) => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -14,20 +14,32 @@ const OutletOwnerDashboard: React.FC<{ outletId: string }> = ({ outletId }) => {
     return () => clearInterval(timer);
   }, [outletId]);
 
-  const refreshData = () => {
-    setOrders(MockDB.getOrders(outletId));
-    setInventory(MockDB.getInventory(outletId));
+  const refreshData = async () => {
+    try {
+      const [ordersData, inventoryData] = await Promise.all([
+        FirestoreDB.getOrders(undefined, outletId),
+        FirestoreDB.getInventory(outletId)
+      ]);
+      setOrders(ordersData);
+      setInventory(inventoryData);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    }
   };
 
   const updateStatus = (orderId: string, status: OrderStatus) => {
-    /* Added missing updatedBy argument (3rd parameter) */
-    MockDB.updateOrderStatus(orderId, status, 'Outlet Owner');
-    refreshData();
+    FirestoreDB.updateOrderStatus(orderId, status).then(() => {
+      refreshData();
+    }).catch(console.error);
   };
 
   const updateStock = (id: string, newQty: number) => {
-    MockDB.updateInventoryStock(id, newQty);
-    refreshData();
+    const item = inventory.find(i => i.id === id);
+    if (item) {
+      FirestoreDB.saveInventoryItem({ ...item, stock: newQty }).then(() => {
+        refreshData();
+      }).catch(console.error);
+    }
   };
 
   return (

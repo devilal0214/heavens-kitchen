@@ -116,8 +116,7 @@ havens-kitchen/
 ├── config/             # Configuration files
 │   └── firebase.ts     # Firebase initialization
 ├── services/           # Service layer
-│   ├── firestoreDb.ts  # Firestore operations
-│   ├── dbAdapter.ts    # Database adapter layer
+│   ├── firestoreDb.ts  # Firebase Firestore operations (primary database)
 │   └── locationService.ts
 ├── App.tsx             # Main app component
 ├── types.ts            # TypeScript type definitions

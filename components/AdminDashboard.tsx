@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { RealtimeDB } from "../services/mockDb";
+import FirestoreDB from "../services/firestoreDb";
 import {
   Order,
   MenuItem,
@@ -46,9 +46,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [categories, setCategories] = useState<string[]>([]);
   const [staffUsers, setStaffUsers] = useState<UserProfile[]>([]);
   const [manualInvoices, setManualInvoices] = useState<ManualInvoice[]>([]);
-  const [globalSettings, setGlobalSettings] = useState<GlobalSettings>(
-    RealtimeDB.getGlobalSettings()
-  );
+  const [globalSettings, setGlobalSettings] = useState<GlobalSettings>({
+    gstPercentage: 5,
+    deliveryBaseCharge: 40,
+    deliveryChargePerKm: 10,
+    freeDeliveryThreshold: 500,
+    freeDeliveryDistanceLimit: 5,
+    deliveryTiers: [],
+    invoiceSettings: {
+      brandName: 'HAVENS KITCHEN',
+      logoUrl: '',
+      tagline: 'ESTABLISHED 1984 • CULINARY SANCTUARY',
+      address: 'HQ - South Delhi, India',
+      contact: '9899466466',
+      showTagline: true,
+      showNotice: true,
+      primaryColor: '#C0392B'
+    }
+  });
 
   const [statsYear, setStatsYear] = useState<number>(2026);
   const [statsMonth, setStatsMonth] = useState<number | "all">("all");
@@ -131,21 +146,41 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [categoryName, setCategoryName] = useState("");
 
   useEffect(() => {
-    const refresh = () => {
-      setOutlets(RealtimeDB.getOutlets());
-      setOrders(RealtimeDB.getOrders());
-      setMenu(RealtimeDB.getMenu());
-      setInventory(RealtimeDB.getInventory());
-      setCategories(RealtimeDB.getCategories());
-      setStaffUsers(RealtimeDB.getStaffUsers());
-      setManualInvoices(RealtimeDB.getManualInvoices());
-      setGlobalSettings(RealtimeDB.getGlobalSettings());
+    const refresh = async () => {
+      try {
+        const [
+          outletsData,
+          ordersData,
+          menuData,
+          inventoryData,
+          staffData,
+          invoicesData,
+          settingsData
+        ] = await Promise.all([
+          FirestoreDB.getOutlets(),
+          FirestoreDB.getOrders(),
+          FirestoreDB.getMenu(),
+          FirestoreDB.getInventory(selectedOutlet === 'all' ? undefined : selectedOutlet),
+          FirestoreDB.getStaffUsers(),
+          FirestoreDB.getManualInvoices(),
+          FirestoreDB.getGlobalSettings()
+        ]);
+
+        setOutlets(outletsData);
+        setOrders(ordersData);
+        setMenu(menuData);
+        setInventory(inventoryData);
+        setCategories(['Signature Selection', 'Momo Factory', 'Appetizers', 'Main Course', 'Beverages', 'Desserts']);
+        setStaffUsers(staffData);
+        setManualInvoices(invoicesData);
+        setGlobalSettings(settingsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
     };
 
     refresh();
-    const unsubscribe = RealtimeDB.onUpdate(refresh);
-    return () => unsubscribe();
-  }, []);
+  }, [selectedOutlet]);
 
   const filteredStaff = useMemo(() => {
     return staffUsers.filter(
@@ -302,8 +337,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       inventoryItems: [],
       discountPercentage: Number(formItem.discount),
     };
-    RealtimeDB.saveMenuItem(item);
-    setIsModalOpen(false);
+    FirestoreDB.saveMenuItem(item).then(() => {
+      setIsModalOpen(false);
+      FirestoreDB.getMenu().then(setMenu);
+    }).catch(console.error);
   };
 
   const handleSaveInventory = (e: React.FormEvent) => {
@@ -317,13 +354,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       unit: inventoryForm.unit,
       imageUrl: inventoryForm.imageUrl,
     };
-    RealtimeDB.saveInventoryItem(item);
-    setIsInventoryModalOpen(false);
+    FirestoreDB.saveInventoryItem(item).then(() => {
+      setIsInventoryModalOpen(false);
+      FirestoreDB.getInventory(selectedOutlet === 'all' ? undefined : selectedOutlet).then(setInventory);
+    }).catch(console.error);
   };
 
   const handleSaveUser = (e: React.FormEvent) => {
     e.preventDefault();
-    RealtimeDB.saveStaffUser({
+    FirestoreDB.saveStaffUser({
       id: editingUserId || `staff-${Date.now()}`,
       name: userForm.name,
       email: userForm.email,
@@ -333,14 +372,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       role: userForm.role,
       outletId: userForm.outletId,
       permissions: userForm.permissions,
-    });
-    setIsUserModalOpen(false);
+    }).then(() => {
+      setIsUserModalOpen(false);
+      FirestoreDB.getStaffUsers().then(setStaffUsers);
+    }).catch(console.error);
   };
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
-    RealtimeDB.saveGlobalSettings(globalSettings);
-    alert("System parameters synchronized.");
+    FirestoreDB.saveGlobalSettings(globalSettings).then(() => {
+      alert("System parameters synchronized.");
+    }).catch(console.error);
   };
 
   const handleSaveOutlet = (e: React.FormEvent) => {
@@ -359,14 +401,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       rating: 4.5,
       totalRatings: 0,
     };
-    RealtimeDB.saveOutlet(outlet);
-    setIsOutletModalOpen(false);
+    FirestoreDB.saveOutlet(outlet).then(() => {
+      setIsOutletModalOpen(false);
+      FirestoreDB.getOutlets().then(setOutlets);
+    }).catch(console.error);
   };
 
   const handleAddCategory = (e: React.FormEvent) => {
     e.preventDefault();
-    if (categoryName.trim()) {
-      RealtimeDB.saveCategory(categoryName.trim());
+    if (categoryName.trim() && !categories.includes(categoryName.trim())) {
+      setCategories([...categories, categoryName.trim()]);
       setCategoryName("");
       setIsCategoryModalOpen(false);
     }
@@ -1299,8 +1343,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           }
           gstPercentage={globalSettings.gstPercentage}
           onSave={(invoice: any) => {
-            RealtimeDB.createManualInvoice(invoice);
-            setIsManualInvoiceModalOpen(false);
+            FirestoreDB.saveManualInvoice(invoice).then(() => {
+              setIsManualInvoiceModalOpen(false);
+              FirestoreDB.getManualInvoices().then(setManualInvoices);
+            }).catch(console.error);
           }}
         />
       )}
@@ -1436,7 +1482,9 @@ const OutletTab: React.FC<any> = ({
 }) => {
   const handleDelete = (id: string) => {
     if (window.confirm("Strike this sanctuary station from the records?")) {
-      RealtimeDB.deleteOutlet(id);
+      FirestoreDB.deleteOutlet(id).then(() => {
+        FirestoreDB.getOutlets().then(setOutlets);
+      }).catch(console.error);
     }
   };
 
@@ -1586,7 +1634,9 @@ const InventoryTab: React.FC<any> = ({
         "Strike this automated stock link from the records? Stock tracking for this dish will stop immediately."
       )
     ) {
-      RealtimeDB.deleteInventoryItem(id);
+      FirestoreDB.deleteInventoryItem(id).then(() => {
+        FirestoreDB.getInventory(selectedOutlet === 'all' ? undefined : selectedOutlet).then(setInventory);
+      }).catch(console.error);
     }
   };
 
@@ -1744,13 +1794,11 @@ const OrderTab: React.FC<any> = ({ selectedOutlet, orders, user }) => (
           <div className="flex flex-wrap gap-2 pt-6 border-t border-gray-50">
             {order.status === OrderStatus.PENDING && (
               <button
-                onClick={() =>
-                  RealtimeDB.updateOrderStatus(
-                    order.id,
-                    OrderStatus.ACCEPTED,
-                    user.name
-                  )
-                }
+                onClick={() => {
+                  FirestoreDB.updateOrderStatus(order.id, OrderStatus.ACCEPTED).then(() => {
+                    FirestoreDB.getOrders().then(setOrders);
+                  }).catch(console.error);
+                }}
                 className="flex-1 py-4 bg-emerald-500 text-white rounded-[15px] text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
               >
                 Accept
@@ -1758,13 +1806,11 @@ const OrderTab: React.FC<any> = ({ selectedOutlet, orders, user }) => (
             )}
             {order.status === OrderStatus.ACCEPTED && (
               <button
-                onClick={() =>
-                  RealtimeDB.updateOrderStatus(
-                    order.id,
-                    OrderStatus.PREPARING,
-                    user.name
-                  )
-                }
+                onClick={() => {
+                  FirestoreDB.updateOrderStatus(order.id, OrderStatus.PREPARING).then(() => {
+                    FirestoreDB.getOrders().then(setOrders);
+                  }).catch(console.error);
+                }}
                 className="flex-1 py-4 bg-amber-500 text-white rounded-[15px] text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
               >
                 Start Prep
@@ -1772,13 +1818,11 @@ const OrderTab: React.FC<any> = ({ selectedOutlet, orders, user }) => (
             )}
             {order.status === OrderStatus.PREPARING && (
               <button
-                onClick={() =>
-                  RealtimeDB.updateOrderStatus(
-                    order.id,
-                    OrderStatus.READY,
-                    user.name
-                  )
-                }
+                onClick={() => {
+                  FirestoreDB.updateOrderStatus(order.id, OrderStatus.READY).then(() => {
+                    FirestoreDB.getOrders().then(setOrders);
+                  }).catch(console.error);
+                }}
                 className="flex-1 py-4 bg-blue-500 text-white rounded-[15px] text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
               >
                 Ready
@@ -1786,13 +1830,11 @@ const OrderTab: React.FC<any> = ({ selectedOutlet, orders, user }) => (
             )}
             {order.status === OrderStatus.READY && (
               <button
-                onClick={() =>
-                  RealtimeDB.updateOrderStatus(
-                    order.id,
-                    OrderStatus.OUT_FOR_DELIVERY,
-                    user.name
-                  )
-                }
+                onClick={() => {
+                  FirestoreDB.updateOrderStatus(order.id, OrderStatus.OUT_FOR_DELIVERY).then(() => {
+                    FirestoreDB.getOrders().then(setOrders);
+                  }).catch(console.error);
+                }}
                 className="flex-1 py-4 bg-purple-500 text-white rounded-[15px] text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
               >
                 Hand Over
@@ -1800,26 +1842,22 @@ const OrderTab: React.FC<any> = ({ selectedOutlet, orders, user }) => (
             )}
             {order.status === OrderStatus.OUT_FOR_DELIVERY && (
               <button
-                onClick={() =>
-                  RealtimeDB.updateOrderStatus(
-                    order.id,
-                    OrderStatus.DELIVERED,
-                    user.name
-                  )
-                }
+                onClick={() => {
+                  FirestoreDB.updateOrderStatus(order.id, OrderStatus.DELIVERED).then(() => {
+                    FirestoreDB.getOrders().then(setOrders);
+                  }).catch(console.error);
+                }}
                 className="flex-1 py-4 bg-[#C0392B] text-white rounded-[15px] text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
               >
                 Delivered
               </button>
             )}
             <button
-              onClick={() =>
-                RealtimeDB.updateOrderStatus(
-                  order.id,
-                  OrderStatus.REJECTED,
-                  user.name
-                )
-              }
+              onClick={() => {
+                FirestoreDB.updateOrderStatus(order.id, OrderStatus.REJECTED).then(() => {
+                  FirestoreDB.getOrders().then(setOrders);
+                }).catch(console.error);
+              }}
               className="px-6 py-4 bg-gray-50 text-red-500 rounded-[15px] text-[10px] font-black hover:bg-red-50 active:scale-95 transition-all"
             >
               Reject
@@ -1847,7 +1885,9 @@ const MenuTab: React.FC<any> = ({
 
   const handleDelete = (id: string) => {
     if (window.confirm("Strike this recipe from the sanctuary collection?")) {
-      RealtimeDB.deleteMenuItem(id);
+      FirestoreDB.deleteMenuItem(id).then(() => {
+        FirestoreDB.getMenu().then(setMenu);
+      }).catch(console.error);
     }
   };
 
@@ -2295,8 +2335,11 @@ const UsersTab: React.FC<any> = ({
                           window.confirm(
                             "Strike this personnel from the sanctuary records?"
                           )
-                        )
-                          RealtimeDB.deleteStaffUser(u.id);
+                        ) {
+                          FirestoreDB.deleteStaffUser(u.id).then(() => {
+                            FirestoreDB.getStaffUsers().then(setStaffUsers);
+                          }).catch(console.error);
+                        }
                       }}
                       className="text-red-500 text-[10px] font-black uppercase hover:underline opacity-40 hover:opacity-100"
                     >

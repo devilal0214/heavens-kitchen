@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Order, OrderStatus, UserProfile, Outlet } from '../types';
-import { RealtimeDB } from '../services/dbAdapter';
+import { FirestoreDB } from '../services/firestoreDb';
 
 interface MyOrdersProps {
   user: UserProfile;
@@ -17,20 +17,9 @@ const MyOrders: React.FC<MyOrdersProps> = ({ user, onTrackOrder }) => {
   const [selectedOutlet, setSelectedOutlet] = useState('all');
   const [filterDate, setFilterDate] = useState('');
 
-  useEffect(() => {
-    const fetch = () => {
-      const allOrders = RealtimeDB.getOrders();
-      const allOutlets = RealtimeDB.getOutlets();
-      setOutlets(allOutlets);
-      setOrders(allOrders.filter(o => o.customerId === user.id));
-    };
-    fetch();
-    return RealtimeDB.onUpdate(fetch);
-  }, [user.id]);
-
   const generateInvoice = async (order: Order) => {
     const outlet = outlets.find(o => o.id === order.outletId);
-    const globalSettings = RealtimeDB.getGlobalSettings();
+    const globalSettings = await FirestoreDB.getGlobalSettings();
     const invSettings = globalSettings.invoiceSettings;
     
     setIsGenerating(order.id);

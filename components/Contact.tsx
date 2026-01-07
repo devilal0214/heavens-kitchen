@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { RealtimeDB } from '../services/dbAdapter';
+import { FirestoreDB } from '../services/firestoreDb';
 import { Outlet } from '../types';
 
 const Contact: React.FC = () => {
@@ -24,11 +24,7 @@ const Contact: React.FC = () => {
   const minDateTime = new Date().toISOString().slice(0, 16);
 
   useEffect(() => {
-    const fetchOutlets = () => {
-      setOutlets(RealtimeDB.getOutlets());
-    };
-    fetchOutlets();
-    return RealtimeDB.onUpdate(fetchOutlets);
+    FirestoreDB.getOutlets().then(setOutlets).catch(console.error);
   }, []);
 
   const validate = () => {

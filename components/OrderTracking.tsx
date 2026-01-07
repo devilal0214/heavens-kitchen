@@ -1,15 +1,8 @@
 // components/OrderTracking.tsx
 
-import React, { useEffect, useState } from "react";
-import {
-  doc,
-  onSnapshot,
-  addDoc,
-  collection,
-  serverTimestamp,
-} from "firebase/firestore";
-import { db } from "../config/firebase"; // ✅ correct path as per your structure
-import { Order, OrderStatus, UserProfile, Review } from "../types";
+import React, { useState, useEffect } from 'react';
+import { Order, OrderStatus, UserProfile, Review } from '../types';
+import FirestoreDB from '../services/firestoreDb';
 
 const STAGES = [
   { id: OrderStatus.PENDING, label: "Accepted", icon: "📝" },
@@ -42,7 +35,19 @@ const OrderTracking: React.FC<OrderTrackingProps> = ({
   useEffect(() => {
     if (!orderId) return;
 
+<<<<<<< HEAD
     setLoading(true);
+=======
+    const fetchOrder = async () => {
+      try {
+        const orders = await FirestoreDB.getOrders();
+        const found = orders.find(o => o.id === orderId);
+        if (found) setOrder(found);
+      } catch (error) {
+        console.error('Error fetching order:', error);
+      }
+    };
+>>>>>>> 87b2a69 (Complete migration to Firebase Firestore - remove all localStorage and compatibility layers)
 
     const cleanId = String(orderId).trim();
     const ref = doc(db, "orders", cleanId);
@@ -80,6 +85,7 @@ const OrderTracking: React.FC<OrderTrackingProps> = ({
       customerName: user?.name || (order as any).customerName || "Anonymous",
       timestamp: Date.now(),
     };
+<<<<<<< HEAD
 
     try {
       setSubmitting(true);
@@ -97,6 +103,12 @@ const OrderTracking: React.FC<OrderTrackingProps> = ({
     } finally {
       setSubmitting(false);
     }
+=======
+    
+    FirestoreDB.saveReview(review).then(() => {
+      setSubmitted(true);
+    }).catch(console.error);
+>>>>>>> 87b2a69 (Complete migration to Firebase Firestore - remove all localStorage and compatibility layers)
   };
 
   // No orderId at all

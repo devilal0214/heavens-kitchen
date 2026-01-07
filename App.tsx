@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserRole, Outlet, AppState, Coordinates, MenuItem, Order, OrderStatus, UserProfile } from './types';
-import { RealtimeDB } from './services/dbAdapter';
+
 import FirestoreDB from './services/firestoreDb';
 import { getUserLocation, findNearestOutlet } from './services/locationService';
 
@@ -78,17 +78,6 @@ const App: React.FC = () => {
       }
     };
     init();
-
-    // Listen for database updates (like new outlets added by admin)
-    const unsubscribe = RealtimeDB.onUpdate(() => {
-      FirestoreDB.getOutlets().then(freshOutlets => {
-        setState(prev => ({
-          ...prev,
-          outlets: freshOutlets,
-        }));
-      });
-    });
-    return unsubscribe;
   }, []);
 
   const handleSelectOutlet = (outlet: Outlet) => {
@@ -152,7 +141,7 @@ const App: React.FC = () => {
       history: [{ status: OrderStatus.PENDING, time: Date.now(), updatedBy: 'System' }]
     };
 
-    RealtimeDB.createOrder(newOrder);
+    FirestoreDB.createOrder(newOrder).catch(console.error);
     setActiveOrderId(newOrder.id);
     setState(prev => ({ ...prev, cart: [] }));
     setIsCartOpen(false);

@@ -1,7 +1,6 @@
-
-import React, { useState, useEffect, useRef } from 'react';
-import { Outlet, MenuItem, UserProfile, OrderItem } from '../types';
-import { MockDB } from '../services/mockDb';
+import React, { useState, useEffect, useRef } from "react";
+import { Outlet, MenuItem, UserProfile, OrderItem } from "../types";
+import FirestoreDB from "../services/firestoreDb";
 
 interface MenuPageProps {
   outlet: Outlet;
@@ -26,13 +25,21 @@ const MenuPage: React.FC<MenuPageProps> = ({ outlet, outlets, onAddToCart, onUpd
 
   useEffect(() => {
     setLoading(true);
-    const timer = setTimeout(() => {
-      setItems(MockDB.getMenu(outlet.id));
-      const masterCats = MockDB.getCategories();
-      setCategories(masterCats);
-      setLoading(false);
-    }, 400);
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        const [menuItems, allCategories] = await Promise.all([
+          FirestoreDB.getMenu(outlet.id),
+          Promise.resolve(['Signature Selection', 'Momo Factory', 'Appetizers', 'Main Course', 'Beverages', 'Desserts'])
+        ]);
+        setItems(menuItems);
+        setCategories(allCategories);
+      } catch (error) {
+        console.error('Error loading menu:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, [outlet.id]);
 
   useEffect(() => {

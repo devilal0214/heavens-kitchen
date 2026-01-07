@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { MenuItem, UserProfile, OrderItem } from "../types";
-import { MockDB } from "../services/mockDb";
+import FirestoreDB from "../services/firestoreDb";
 
 interface HomeContentProps {
   onExploreMenu: () => void;
@@ -94,9 +94,12 @@ const HomeContent: React.FC<HomeContentProps> = ({
     return () => clearInterval(timer);
   }, [maxIndex]);
 
-  const signatureItems = useMemo(() => {
-    const allItems = MockDB.getMenu();
-    return allItems.filter((i) => i.category === "Signature Selection");
+  const [signatureItems, setSignatureItems] = useState<MenuItem[]>([]);
+
+  useEffect(() => {
+    FirestoreDB.getMenu().then(allItems => {
+      setSignatureItems(allItems.filter((i) => i.category === "Signature Selection"));
+    }).catch(console.error);
   }, []);
 
   const nextTestimonial = () => {

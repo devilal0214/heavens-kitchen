@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserRole, UserProfile } from '../types';
-import { RealtimeDB } from '../services/dbAdapter';
+import { FirestoreDB } from '../services/firestoreDb';
 
 interface LoginProps {
   onLogin: (user: UserProfile) => void;
@@ -67,7 +67,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBackToHome, initialIsStaff = f
     }
 
     if (isLoginMode) {
-      const allCustomers = RealtimeDB.getCustomers();
+      const allCustomers = await FirestoreDB.getCustomers();
       const found = allCustomers.find(u => u.email === formData.email && u.password === formData.password);
       
       if (found) {
@@ -76,7 +76,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBackToHome, initialIsStaff = f
         setLoginError('Invalid Email or Password.');
       }
     } else {
-      const allCustomers = RealtimeDB.getCustomers();
+      const allCustomers = await FirestoreDB.getCustomers();
       if (allCustomers.some(u => u.email === formData.email)) {
         setLoginError('An account with this email already exists.');
         return;
@@ -92,12 +92,12 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBackToHome, initialIsStaff = f
         role: UserRole.CUSTOMER
       };
       
-      RealtimeDB.saveCustomer(newUser);
+      await FirestoreDB.saveCustomer(newUser);
       onLogin(newUser);
     }
   };
 
-  const handleStaffLogin = (e: React.FormEvent) => {
+  const handleStaffLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
 
@@ -106,7 +106,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBackToHome, initialIsStaff = f
       return;
     }
 
-    const allStaff = RealtimeDB.getStaffUsers();
+    const allStaff = await FirestoreDB.getStaffUsers();
     const foundStaff = allStaff.find(u => u.email === staffEmail && u.password === staffPassword);
 
     if (foundStaff) {

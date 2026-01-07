@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { OrderItem, UserProfile, Outlet, GlobalSettings } from '../types';
-import { RealtimeDB } from '../services/dbAdapter';
+import { FirestoreDB } from '../services/firestoreDb';
 
 interface CartModalProps {
   isOpen: boolean;
@@ -15,7 +15,11 @@ interface CartModalProps {
 
 const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose, items, onUpdateQty, onCheckout, initialUser, currentOutlet }) => {
   const [checkoutStep, setCheckoutStep] = useState(1);
-  const [settings, setSettings] = useState<GlobalSettings>(RealtimeDB.getGlobalSettings());
+  const [settings, setSettings] = useState<GlobalSettings | null>(null);
+
+  useEffect(() => {
+    FirestoreDB.getGlobalSettings().then(setSettings).catch(console.error);
+  }, []);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [isVerifyingAddress, setIsVerifyingAddress] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -37,7 +41,6 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose, items, onUpdateQ
         address: initialUser.address
       }));
     }
-    setSettings(RealtimeDB.getGlobalSettings());
   }, [initialUser, isOpen]);
 
   useEffect(() => {
