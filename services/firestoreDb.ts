@@ -213,7 +213,7 @@ export class FirestoreDB {
         q = collection(db, 'menu');
       }
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MenuItem));
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as object } as MenuItem));
     } catch (error) {
       console.error('Error getting menu:', error);
       return [];
@@ -295,7 +295,7 @@ export class FirestoreDB {
       }
       
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as object } as Order));
     } catch (error) {
       console.error('Error getting orders:', error);
       return [];
@@ -339,7 +339,7 @@ export class FirestoreDB {
         q = collection(db, 'reviews');
       }
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as object } as Review));
     } catch (error) {
       console.error('Error getting reviews:', error);
       return [];
@@ -370,7 +370,7 @@ export class FirestoreDB {
         q = collection(db, 'manualInvoices');
       }
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ManualInvoice));
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as object } as ManualInvoice));
     } catch (error) {
       console.error('Error getting manual invoices:', error);
       return [];
