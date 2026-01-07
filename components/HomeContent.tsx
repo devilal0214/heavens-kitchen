@@ -109,14 +109,14 @@ const HomeContent: React.FC<HomeContentProps> = ({
 
   return (
     <div className="bg-white">
-      {/* Signature Dishes Grid */}
+      {/* Signature Dishes Grid - Updated to match MenuPage 3-column Product Grid */}
       <section className="py-24 px-6 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-end mb-16">
           <div className="max-w-xl animate-fade-down">
             <h4 className="text-[#C0392B] font-black uppercase tracking-[0.4em] text-[10px] mb-4">
               SIGNATURE SELECTION
             </h4>
-            <h2 className="text-4xl md:text-5xl font-montserrat font-medium text-gray-900 leading-tight">
+            <h2 className="text-4xl md:text-5xl font-playfair font-bold text-gray-900 leading-tight">
               Loved by Our Regulars
             </h2>
           </div>
@@ -146,7 +146,7 @@ const HomeContent: React.FC<HomeContentProps> = ({
             ))
           ) : (
             <div className="col-span-full py-20 text-center bg-gray-50 rounded-[40px] border border-dashed border-gray-200">
-              <p className="text-gray-400 font-medium uppercase tracking-widest text-[10px]">
+              <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">
                 No dishes tagged for Signature Selection yet.
               </p>
             </div>
@@ -172,17 +172,17 @@ const HomeContent: React.FC<HomeContentProps> = ({
               <p className="text-[#E31E24] font-black text-3xl leading-none">
                 1984
               </p>
-              <p className="text-gray-400 text-[10px] font-medium uppercase tracking-widest mt-1">
+              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1">
                 Founding Year
               </p>
             </div>
           </div>
 
           <div className="animate-fade-up" style={{ animationDelay: "200ms" }}>
-            <h4 className="text-[#E31E24] font-montserrat tracking-[0.2em] uppercase text-sm mb-4 font-medium">
+            <h4 className="text-[#E31E24] font-montserrat tracking-[0.2em] uppercase text-sm mb-4 font-bold">
               The Haven Story
             </h4>
-            <h2 className="text-4xl md:text-6xl font-montserrat mb-8 leading-tight">
+            <h2 className="text-4xl md:text-6xl font-playfair mb-8 leading-tight">
               A Journey of <br />
               <span className="text-[#E31E24]">Flavours</span> and{" "}
               <span className="text-[#FFB30E]">Memories</span>
@@ -195,7 +195,7 @@ const HomeContent: React.FC<HomeContentProps> = ({
             </p>
             <div className="grid grid-cols-2 gap-10 mb-12">
               <div className="group">
-                <h3 className="text-4xl font-montserrat font-medium text-[#E31E24] group-hover:scale-110 transition-transform origin-left inline-block">
+                <h3 className="text-4xl font-playfair font-bold text-[#E31E24] group-hover:scale-110 transition-transform origin-left inline-block">
                   40+
                 </h3>
                 <p className="text-xs text-gray-500 uppercase tracking-widest font-black mt-2">
@@ -203,7 +203,7 @@ const HomeContent: React.FC<HomeContentProps> = ({
                 </p>
               </div>
               <div className="group">
-                <h3 className="text-4xl font-montserrat font-medium text-[#E31E24] group-hover:scale-110 transition-transform origin-left inline-block">
+                <h3 className="text-4xl font-playfair font-bold text-[#E31E24] group-hover:scale-110 transition-transform origin-left inline-block">
                   100k+
                 </h3>
                 <p className="text-xs text-gray-500 uppercase tracking-widest font-black mt-2">
@@ -226,7 +226,7 @@ const HomeContent: React.FC<HomeContentProps> = ({
 
       {/* Testimonials */}
       <section className="bg-[#050505] text-white py-32 px-6 overflow-hidden relative border-y-8 border-[#FFB30E]">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[25vw] opacity-[0.03] font-montserrat select-none leading-none pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[25vw] opacity-[0.03] font-playfair select-none leading-none pointer-events-none">
           HAVENS
         </div>
 
@@ -235,7 +235,7 @@ const HomeContent: React.FC<HomeContentProps> = ({
             <h4 className="text-[#FFB30E] font-black uppercase tracking-[0.4em] text-[10px] mb-4">
               Guest Experiences
             </h4>
-            <h2 className="text-4xl md:text-5xl font-montserrat font-medium text-white tracking-tight">
+            <h2 className="text-4xl md:text-5xl font-playfair font-bold text-white tracking-tight">
               Voices of the Sanctuary
             </h2>
           </div>
@@ -259,7 +259,7 @@ const HomeContent: React.FC<HomeContentProps> = ({
                       <div className="text-[#FFB30E] text-6xl mb-4 italic leading-none opacity-20 group-hover/card:opacity-40 transition-opacity font-serif">
                         “
                       </div>
-                      <p className="text-lg font-montserrat italic leading-relaxed mb-10 flex-grow text-white/80 line-clamp-4">
+                      <p className="text-lg font-playfair italic leading-relaxed mb-10 flex-grow text-white/80 line-clamp-4">
                         {t.quote}
                       </p>
                       <div className="flex items-center gap-4 border-t border-white/10 pt-8">
@@ -271,7 +271,7 @@ const HomeContent: React.FC<HomeContentProps> = ({
                           />
                         </div>
                         <div className="overflow-hidden">
-                          <h5 className="font-medium text-sm text-[#FFB30E] uppercase tracking-widest truncate">
+                          <h5 className="font-bold text-sm text-[#FFB30E] uppercase tracking-widest truncate">
                             {t.name}
                           </h5>
                           <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mt-1 truncate">
@@ -344,7 +344,7 @@ const HomeContent: React.FC<HomeContentProps> = ({
         <h4 className="text-[#E31E24] font-black uppercase tracking-[0.4em] text-[10px] mb-4">
           Find Your Nearest
         </h4>
-        <h2 className="text-4xl md:text-6xl font-montserrat mb-16 animate-fade-up">
+        <h2 className="text-4xl md:text-6xl font-playfair mb-16 animate-fade-up">
           Our Sanctuaries
         </h2>
         <div className="flex flex-wrap justify-center gap-10">
@@ -352,7 +352,7 @@ const HomeContent: React.FC<HomeContentProps> = ({
             className="bg-white p-12 rounded-[15px] flex-1 min-w-[320px] border border-gray-100 shadow-xl hover:shadow-2xl transition-all group animate-fade-up"
             style={{ animationDelay: "0ms" }}
           >
-            <h3 className="text-3xl font-montserrat mb-4 group-hover:text-[#E31E24] transition-colors">
+            <h3 className="text-3xl font-playfair mb-4 group-hover:text-[#E31E24] transition-colors">
               Kalka Ji
             </h3>
             <p className="text-gray-500 mb-8 text-sm leading-relaxed">
@@ -367,7 +367,7 @@ const HomeContent: React.FC<HomeContentProps> = ({
             className="bg-white p-12 rounded-[15px] flex-1 min-w-[320px] border border-gray-100 shadow-xl hover:shadow-2xl transition-all group animate-fade-up"
             style={{ animationDelay: "200ms" }}
           >
-            <h3 className="text-3xl font-montserrat mb-4 group-hover:text-[#E31E24] transition-colors">
+            <h3 className="text-3xl font-playfair mb-4 group-hover:text-[#E31E24] transition-colors">
               Defence Colony
             </h3>
             <p className="text-gray-500 mb-8 text-sm leading-relaxed">
@@ -386,7 +386,7 @@ const HomeContent: React.FC<HomeContentProps> = ({
           <h4 className="text-[#E31E24] font-montserrat tracking-[0.2em] uppercase text-sm mb-4 animate-fade-down">
             Our Craft
           </h4>
-          <h2 className="text-4xl md:text-5xl font-montserrat mb-6 animate-fade-up">
+          <h2 className="text-4xl md:text-5xl font-playfair mb-6 animate-fade-up">
             Experience Culinary Excellence
           </h2>
           <div className="w-20 h-1 bg-[#FFB30E] mx-auto rounded-[15px] animate-blur-in"></div>
@@ -406,7 +406,7 @@ const HomeContent: React.FC<HomeContentProps> = ({
               <div className="text-5xl mb-6 transform group-hover:scale-110 transition-transform duration-300">
                 {f.icon}
               </div>
-              <h3 className="text-xl font-medium mb-4 font-montserrat">
+              <h3 className="text-xl font-bold mb-4 font-montserrat">
                 {f.title}
               </h3>
               <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
@@ -418,7 +418,7 @@ const HomeContent: React.FC<HomeContentProps> = ({
   );
 };
 
-
+// Standardized ProductCard component that matches MenuPage design exactly
 const ProductCard: React.FC<{
   item: MenuItem;
   onAddToCart: any;
@@ -429,65 +429,61 @@ const ProductCard: React.FC<{
   const [selectedVariant, setSelectedVariant] = useState<
     "full" | "half" | "qtr"
   >(item.price.qtr ? "qtr" : item.price.half ? "half" : "full");
-
   const currentPrice = item.price[selectedVariant] || item.price.full;
   const discountedPrice = item.discountPercentage
     ? Math.round(currentPrice * (1 - item.discountPercentage / 100))
     : currentPrice;
-
   const cartItem = cart.find(
     (c) => c.menuItemId === item.id && c.variant === selectedVariant
   );
 
-  const foodPillText = item.foodType === "Veg" ? "PURE VEG" : "NON VEG";
-
   const VariantRow: React.FC<{ v: "full" | "half" | "qtr" }> = ({ v }) => {
     if (!item.price[v]) return null;
-
     const isActive = selectedVariant === v;
-    const qtyLabel = item.variantQuantities?.[v]; // e.g. "6 PCS"
-    const servesLabel = item.serves?.[v]; // e.g. "2-3 people"
+    const qtyLabel = item.variantQuantities?.[v];
+    const servesLabel = item.serves?.[v];
 
     return (
       <button
         onClick={() => setSelectedVariant(v)}
-        className={[
-          "w-full rounded-[15px] px-5 py-4 flex items-center justify-between",
-          "transition-all duration-300 border",
+        className={`w-full flex items-center justify-between p-3 rounded-[15px] transition-all duration-300 ${
           isActive
-            ? "bg-[#C0392B] border-black/10 shadow-[0_10px_30px_rgba(192,57,43,0.25)]"
-            : "bg-[#121212] border-black/5 hover:bg-[#171717]",
-        ].join(" ")}
+            ? "bg-white shadow-sm border border-gray-100"
+            : "hover:bg-gray-100/50"
+        }`}
       >
-        <div className="flex flex-col text-left">
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-1.5 h-1.5 rounded-full ${
+              isActive ? "bg-[#C0392B]" : "bg-gray-200"
+            }`}
+          ></div>
           <span
-            className={[
-              "text-[11px] font-medium uppercase tracking-[0.22em]",
-              isActive ? "text-white" : "text-white/70",
-            ].join(" ")}
+            className={`text-[9px] font-black uppercase tracking-widest ${
+              isActive ? "text-[#C0392B]" : "text-gray-400"
+            }`}
           >
-            {v === "qtr" ? "QTR" : v === "half" ? "HALF" : "FULL"}
-            {qtyLabel ? ` (${qtyLabel})` : ""}
+            {v}
           </span>
-          {servesLabel && (
-            <span
-              className={[
-                "text-[10px] mt-1",
-                isActive ? "text-white/80" : "text-white/40",
-              ].join(" ")}
-            >
-              {servesLabel}
+        </div>
+        <div className="flex items-center gap-4">
+          {qtyLabel && (
+            <span className="text-[7px] font-bold text-gray-300 uppercase">
+              {qtyLabel}
             </span>
           )}
-        </div>
-
-        <div
-          className={[
-            "text-[13px] font-medium tabular-nums",
-            isActive ? "text-white" : "text-white/80",
-          ].join(" ")}
-        >
-          ₹{item.price[v]}
+          {servesLabel && (
+            <span className="text-[7px] font-black text-gray-400">
+              👥 {servesLabel}
+            </span>
+          )}
+          <span
+            className={`text-[10px] font-black ${
+              isActive ? "text-[#C0392B]" : "text-gray-900"
+            } tabular-nums`}
+          >
+            ₹{item.price[v]}
+          </span>
         </div>
       </button>
     );
@@ -495,113 +491,66 @@ const ProductCard: React.FC<{
 
   return (
     <div
-      className={[
-        "rounded-[15px] overflow-hidden",
-        "bg-[#ffff] border border-white/5",
-        "shadow-[0_30px_80px_rgba(0,0,0,0.45)]",
-        "transition-all duration-500 hover:-translate-y-1 hover:border-white/10",
-        "flex flex-col",
-        "animate-fade-up",
-      ].join(" ")}
-      style={{ animationDelay: `${(idx % 3) * 90}ms` }}
+      className="group bg-white rounded-[15px] overflow-hidden transition-all duration-500 animate-fade-up border border-gray-100 hover:shadow-2xl flex flex-col h-full"
+      style={{ animationDelay: `${(idx % 3) * 100}ms` }}
     >
-      {/* IMAGE HEADER */}
-      <div className="relative">
-        <div className="h-52 w-full overflow-hidden">
-          <img
-            src={item.imageUrl}
-            alt={item.name}
-            className="h-full w-full object-cover scale-[1.02] transition-transform duration-[1800ms] hover:scale-110"
-          />
-        </div>
-
-        {/* subtle overlay like first design */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0B]/80 via-transparent to-transparent" />
-
-        {/* PURE VEG / NON VEG pill (top-right) */}
-        <div className="absolute top-4 right-4">
-          <div
-            className={[
-              "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-              item.foodType === "Veg"
-                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/20"
-                : "bg-red-500/20 text-red-200 border border-red-400/20",
-            ].join(" ")}
-          >
-            {foodPillText}
-          </div>
-        </div>
-
-        {/* veg/non-veg dot (top-left) */}
+      <div className="relative aspect-[4/3] m-2.5 overflow-hidden rounded-[15px] bg-gray-50">
+        <img
+          src={item.imageUrl}
+          alt={item.name}
+          className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105"
+        />
         <div className="absolute top-4 left-4">
           <div
-            className={`w-4 h-4 rounded-full border-2 border-white/70 shadow-sm ${
+            className={`w-4 h-4 rounded-full border-2 border-white shadow-sm ${
               item.foodType === "Veg" ? "bg-emerald-500" : "bg-red-500"
             }`}
-          />
+          ></div>
         </div>
+        {item.discountPercentage && item.discountPercentage > 0 && (
+          <div className="absolute top-4 right-4 bg-black text-white text-[8px] font-black px-2 py-1 rounded-[15px]">
+            {item.discountPercentage}% OFF
+          </div>
+        )}
       </div>
 
-      {/* CONTENT */}
-      <div className="px-7 pt-6 pb-6 flex flex-col flex-grow">
-        <h3 className="text-[22px] leading-tight font-semibold text-black uppercase tracking-tight">
-          {item.name}
-        </h3>
-
-        <p className="mt-2 text-[12px] italic text-black/50 line-clamp-2">
-          {item.description}
+      <div className="px-8 pb-10 pt-2 flex flex-col flex-grow">
+        <div className="flex justify-between items-start mb-1">
+          <h3 className="text-2xl font-bold text-gray-900 leading-tight group-hover:text-[#C0392B] transition-colors">
+            {item.name}
+          </h3>
+          <span className="text-2xl font-black text-[#C0392B] tracking-tighter tabular-nums">
+            ₹{discountedPrice}
+          </span>
+        </div>
+        <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest mb-4">
+          {item.category}{" "}
+          {item.isSpicy !== "None"
+            ? "🌶️".repeat(
+                item.isSpicy === "Mild" ? 1 : item.isSpicy === "Medium" ? 2 : 3
+              )
+            : ""}
         </p>
 
-        <div className="mt-6">
-          <p className="text-[10px] font-black uppercase tracking-[0.35em] text-black/35">
-            PORTION PROTOCOL
-          </p>
+        <p className="text-[11px] text-gray-400 italic mb-8 line-clamp-2">
+          "{item.description}"
+        </p>
 
-          <div className="mt-3 space-y-3">
-            {/* keep same order vibe as first screenshot: show half/full first if you want.
-                BUT to stay consistent with your data, we render qtr/half/full in that order.
-                If you want EXACT like first (half then full), swap these rows.
-             */}
+        <div className="mt-auto space-y-6">
+          <div className="bg-gray-50 p-1 rounded-[15px] flex flex-col gap-0.5 shadow-inner border border-gray-100">
             <VariantRow v="qtr" />
             <VariantRow v="half" />
             <VariantRow v="full" />
           </div>
-        </div>
 
-        {/* BOTTOM BAR: Total + CTA */}
-        <div className="mt-auto pt-7 flex items-end justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.35em] text-black/30">
-              TOTAL VALUATION
-            </p>
-            <p className="mt-2 text-[28px] font-semibold text-black tabular-nums leading-none">
-              ₹{discountedPrice}
-            </p>
-
-            {item.discountPercentage ? (
-              <p className="mt-2 text-[11px] text-black/40 tabular-nums">
-                MRP{" "}
-                <span className="line-through decoration-white/30">
-                  ₹{currentPrice}
-                </span>{" "}
-                •{" "}
-                <span className="text-[#C0392B] font-medium">
-                  {item.discountPercentage}% OFF
-                </span>
-              </p>
-            ) : null}
-          </div>
-
-          {/* CTA */}
           {cartItem ? (
-            <div className="bg-white rounded-[16px] overflow-hidden flex items-center h-[52px] shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
+            <div className="flex items-center bg-[#C0392B] text-white rounded-[15px] overflow-hidden h-14 shadow-xl">
               <button
                 onClick={() => onUpdateQty(item.id, selectedVariant, -1)}
-                className="w-14 h-full flex items-center justify-center hover:bg-gray-100 transition"
-                aria-label="Decrease quantity"
+                className="flex-1 h-full flex items-center justify-center hover:bg-black transition-all"
               >
                 <svg
-                  className="w-5 h-5"
+                  className="w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -609,23 +558,20 @@ const ProductCard: React.FC<{
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth="3"
+                    strokeWidth="4"
                     d="M20 12H4"
                   />
                 </svg>
               </button>
-
-              <div className="w-14 h-full flex items-center justify-center font-black text-black tabular-nums border-x border-black/10">
+              <div className="w-14 h-full flex items-center justify-center font-black tabular-nums border-x border-white/10">
                 {cartItem.quantity}
               </div>
-
               <button
                 onClick={() => onUpdateQty(item.id, selectedVariant, 1)}
-                className="w-14 h-full flex items-center justify-center hover:bg-gray-100 transition"
-                aria-label="Increase quantity"
+                className="flex-1 h-full flex items-center justify-center hover:bg-black transition-all"
               >
                 <svg
-                  className="w-5 h-5"
+                  className="w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -633,7 +579,7 @@ const ProductCard: React.FC<{
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth="3"
+                    strokeWidth="4"
                     d="M12 4v16m8-8H4"
                   />
                 </svg>
@@ -642,15 +588,22 @@ const ProductCard: React.FC<{
           ) : (
             <button
               onClick={() => onAddToCart(item, selectedVariant)}
-              className={[
-                "h-[52px] px-8 rounded-[16px]",
-                "bg-white text-black",
-                "font-black uppercase tracking-widest text-[10px]",
-                "shadow-[0_20px_60px_rgba(0,0,0,0.35)]",
-                "transition-all active:scale-95 hover:bg-white/90",
-              ].join(" ")}
+              className="w-full py-5 bg-[#C0392B] text-white rounded-[15px] font-black uppercase tracking-widest text-[9px] flex items-center justify-center space-x-3 transition-all hover:bg-black active:scale-95 shadow-xl shadow-red-900/10 h-14"
             >
-              ADD TO CART
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="4"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              <span>Add To Sanctuary</span>
             </button>
           )}
         </div>
