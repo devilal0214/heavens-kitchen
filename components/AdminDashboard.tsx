@@ -102,6 +102,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     foodType: "Veg" as "Veg" | "Non-Veg",
     outletId: user.outletId || "outlet-1",
     discount: "0",
+    isAvailable: true,
+    inventoryItems: [] as { itemId: string; qty: number }[],
   });
 
   const [inventoryForm, setInventoryForm] = useState({
@@ -350,10 +352,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         qtr: formItem.qtrServes || undefined,
       },
       imageUrl: formItem.imageUrl,
-      isAvailable: true,
+      isAvailable: formItem.isAvailable,
       isSpicy: formItem.isSpicy,
       foodType: formItem.foodType === "Veg" ? "Veg" : "Non-Veg",
-      inventoryItems: [],
+      inventoryItems: formItem.inventoryItems,
       discountPercentage: Number(formItem.discount),
     };
     FirestoreDB.saveMenuItem(item).then(() => {
@@ -930,6 +932,82 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     }
                     className="w-full p-5 bg-gray-50 rounded-[15px] font-medium outline-none text-center"
                   />
+                </div>
+              </div>
+
+              <div className="md:col-span-2 pt-6 border-t border-gray-100">
+                <label className="flex items-center justify-between p-6 bg-gray-50 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-all">
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest block mb-1">Item Availability</span>
+                    <span className="text-xs text-gray-500">Enable this to show item to customers</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={formItem.isAvailable}
+                    onChange={(e) =>
+                      setFormItem({ ...formItem, isAvailable: e.target.checked })
+                    }
+                    className="w-6 h-6 rounded accent-[#C0392B]"
+                  />
+                </label>
+              </div>
+
+              <div className="md:col-span-2 pt-4">
+                <label className="text-[10px] font-black uppercase text-gray-400 mb-3 block tracking-widest">
+                  Link Inventory Items (Optional)
+                </label>
+                <div className="space-y-3 max-h-60 overflow-y-auto">
+                  {inventory.filter(inv => inv.outletId === formItem.outletId).map(invItem => {
+                    const linkedItem = formItem.inventoryItems.find(i => i.itemId === invItem.id);
+                    return (
+                      <label key={invItem.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-[15px] hover:bg-gray-100 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!!linkedItem}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormItem({
+                                ...formItem,
+                                inventoryItems: [...formItem.inventoryItems, { itemId: invItem.id, qty: 1 }]
+                              });
+                            } else {
+                              setFormItem({
+                                ...formItem,
+                                inventoryItems: formItem.inventoryItems.filter(i => i.itemId !== invItem.id)
+                              });
+                            }
+                          }}
+                          className="w-5 h-5 rounded accent-[#C0392B]"
+                        />
+                        <div className="flex-1">
+                          <span className="text-sm font-medium">{invItem.name}</span>
+                          <span className="text-xs text-gray-400 ml-2">({invItem.stock} {invItem.unit})</span>
+                        </div>
+                        {linkedItem && (
+                          <input
+                            type="number"
+                            min="0.25"
+                            step="0.25"
+                            value={linkedItem.qty}
+                            onChange={(e) => {
+                              setFormItem({
+                                ...formItem,
+                                inventoryItems: formItem.inventoryItems.map(i =>
+                                  i.itemId === invItem.id ? { ...i, qty: Number(e.target.value) } : i
+                                )
+                              });
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-20 p-2 bg-white rounded-lg text-sm text-center border border-gray-200"
+                            placeholder="Qty"
+                          />
+                        )}
+                      </label>
+                    );
+                  })}
+                  {inventory.filter(inv => inv.outletId === formItem.outletId).length === 0 && (
+                    <p className="text-xs text-gray-400 italic text-center py-6">No inventory items available for this outlet</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -2057,6 +2135,8 @@ const MenuTab: React.FC<any> = ({
                       foodType: item.foodType,
                       outletId: item.outletId,
                       discount: String(item.discountPercentage || 0),
+                      isAvailable: item.isAvailable !== undefined ? item.isAvailable : true,
+                      inventoryItems: item.inventoryItems || [],
                     });
                     setIsModalOpen(true);
                   }}

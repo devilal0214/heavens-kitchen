@@ -63,6 +63,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ outlet, outlets, onAddToCart, onUpd
   };
 
   const filtered = items.filter(i => 
+    i.isAvailable && // Only show available items
     (category === 'All' || i.category === category) && 
     (foodTypeFilter === 'All' || i.foodType === foodTypeFilter) &&
     (searchQuery === '' || i.name.toLowerCase().includes(searchQuery.toLowerCase()) || i.description.toLowerCase().includes(searchQuery.toLowerCase()))

@@ -282,6 +282,31 @@ export class FirestoreDB {
     }
   }
 
+  // --- INVENTORY AVAILABILITY ---
+  static async checkMenuItemAvailability(menuItem: MenuItem, variant: 'full' | 'half' | 'qtr' = 'full'): Promise<boolean> {
+    try {
+      if (!menuItem.isAvailable) return false;
+      if (!menuItem.inventoryItems || menuItem.inventoryItems.length === 0) return true;
+      
+      const variantMultiplier = 
+        variant === 'qtr' ? 0.25 :
+        variant === 'half' ? 0.5 : 1;
+      
+      for (const invLink of menuItem.inventoryItems) {
+        const inventoryItem = await this.getInventoryItem(invLink.itemId);
+        if (!inventoryItem) return false;
+        
+        const requiredQty = invLink.qty * variantMultiplier;
+        if (inventoryItem.stock < requiredQty) return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking availability:', error);
+      return false;
+    }
+  }
+
   // --- ORDERS ---
   static async getOrders(userId?: string, outletId?: string): Promise<Order[]> {
     try {
@@ -321,6 +346,30 @@ export class FirestoreDB {
 
   static async createOrder(order: Order): Promise<string> {
     try {
+      // First, get menu items to deduct inventory
+      const menuItems = await this.getMenu(order.outletId);
+      
+      // Deduct inventory for each order item
+      for (const orderItem of order.items) {
+        const menuItem = menuItems.find(m => m.id === orderItem.menuItemId);
+        if (menuItem && menuItem.inventoryItems && menuItem.inventoryItems.length > 0) {
+          // Calculate multiplier based on variant (qtr = 0.25, half = 0.5, full = 1)
+          const variantMultiplier = 
+            orderItem.variant === 'qtr' ? 0.25 :
+            orderItem.variant === 'half' ? 0.5 : 1;
+          
+          // Deduct inventory for each linked inventory item
+          for (const invLink of menuItem.inventoryItems) {
+            const inventoryItem = await this.getInventoryItem(invLink.itemId);
+            if (inventoryItem) {
+              const deductQty = invLink.qty * variantMultiplier * orderItem.quantity;
+              const newStock = Math.max(0, inventoryItem.stock - deductQty);
+              await this.saveInventoryItem({ ...inventoryItem, stock: newStock });
+            }
+          }
+        }
+      }
+      
       const orderData = {
         ...order,
         createdAt: Timestamp.now(),
@@ -332,6 +381,19 @@ export class FirestoreDB {
     } catch (error) {
       console.error('Error creating order:', error);
       throw error;
+    }
+  }
+
+  static async getInventoryItem(id: string): Promise<InventoryItem | null> {
+    try {
+      const docSnap = await getDoc(doc(db, 'inventory', id));
+      if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as InventoryItem;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting inventory item:', error);
+      return null;
     }
   }
 
