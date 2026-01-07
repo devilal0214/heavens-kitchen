@@ -148,8 +148,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   useEffect(() => {
     const refresh = async () => {
       try {
+        // Determine if user can see all outlets or only their assigned outlet
+        const canSeeAllOutlets = user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN;
+        const userOutletId = user.outletId;
+        
+        // Fetch outlets based on role
+        const outletsData = await FirestoreDB.getOutlets();
+        const accessibleOutlets = canSeeAllOutlets 
+          ? outletsData 
+          : outletsData.filter(o => o.id === userOutletId);
+        
+        // Determine which outlet data to fetch
+        const outletToFetch = canSeeAllOutlets 
+          ? (selectedOutlet === 'all' ? undefined : selectedOutlet)
+          : userOutletId;
+
         const [
-          outletsData,
           ordersData,
           menuData,
           inventoryData,
@@ -157,16 +171,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           invoicesData,
           settingsData
         ] = await Promise.all([
-          FirestoreDB.getOutlets(),
-          FirestoreDB.getOrders(),
-          FirestoreDB.getMenu(),
-          FirestoreDB.getInventory(selectedOutlet === 'all' ? undefined : selectedOutlet),
-          FirestoreDB.getStaffUsers(),
+          canSeeAllOutlets 
+            ? FirestoreDB.getOrders(undefined, outletToFetch)
+            : FirestoreDB.getOrders(undefined, userOutletId),
+          canSeeAllOutlets
+            ? FirestoreDB.getMenu(outletToFetch)
+            : FirestoreDB.getMenu(userOutletId),
+          FirestoreDB.getInventory(outletToFetch),
+          canSeeAllOutlets
+            ? FirestoreDB.getStaffUsers()
+            : FirestoreDB.getStaffUsers().then(users => users.filter(u => u.outletId === userOutletId || u.id === user.id)),
           FirestoreDB.getManualInvoices(),
           FirestoreDB.getGlobalSettings()
         ]);
 
-        setOutlets(outletsData);
+        setOutlets(accessibleOutlets);
         setOrders(ordersData);
         setMenu(menuData);
         setInventory(inventoryData);
@@ -180,7 +199,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     };
 
     refresh();
-  }, [selectedOutlet]);
+  }, [selectedOutlet, user.role, user.outletId]);
 
   const filteredStaff = useMemo(() => {
     return staffUsers.filter(
@@ -362,6 +381,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleSaveUser = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Permission checks
+    if (user.role === UserRole.OUTLET_OWNER) {
+      // Outlet owners can only create/edit users for their outlet
+      if (userForm.outletId !== user.outletId && userForm.outletId !== 'all') {
+        alert('You can only manage users for your outlet.');
+        return;
+      }
+      // Outlet owners cannot create SUPER_ADMIN or other OUTLET_OWNERS
+      if (userForm.role === UserRole.SUPER_ADMIN || userForm.role === UserRole.OUTLET_OWNER) {
+        alert('You do not have permission to create Super Admins or Outlet Owners.');
+        return;
+      }
+    }
+    
+    if (user.role === UserRole.MANAGER) {
+      alert('Managers do not have permission to manage users.');
+      return;
+    }
+    
     FirestoreDB.saveStaffUser({
       id: editingUserId || `staff-${Date.now()}`,
       name: userForm.name,
@@ -432,7 +471,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {user.role === UserRole.SUPER_ADMIN && (
+            {(user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN) && (
               <select
                 value={selectedOutlet}
                 onChange={(e) => setSelectedOutlet(e.target.value)}
@@ -445,6 +484,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </option>
                 ))}
               </select>
+            )}
+            {(user.role === UserRole.OUTLET_OWNER || user.role === UserRole.MANAGER) && (
+              <div className="bg-gray-100 border border-gray-200 rounded-[15px] px-5 py-3 text-sm font-bold">
+                Station: {outlets.find(o => o.id === user.outletId)?.name || user.outletId}
+              </div>
             )}
             <button
               className="bg-[#C0392B] text-white px-6 py-3 rounded-[15px] text-[10px] font-black uppercase hover:bg-black transition-all shadow-xl shadow-red-900/10"
@@ -1481,6 +1525,10 @@ const OutletTab: React.FC<any> = ({
   setOutletForm,
 }) => {
   const handleDelete = (id: string) => {
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      alert('Only Super Admin can delete outlets.');
+      return;
+    }
     if (window.confirm("Strike this sanctuary station from the records?")) {
       FirestoreDB.deleteOutlet(id).then(() => {
         FirestoreDB.getOutlets().then(setOutlets);
@@ -1593,24 +1641,26 @@ const OutletTab: React.FC<any> = ({
               >
                 Adjust
               </button>
-              <button
-                onClick={() => handleDelete(o.id)}
-                className="px-5 py-3 text-red-400 hover:text-red-600 transition-colors"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {user.role === UserRole.SUPER_ADMIN && (
+                <button
+                  onClick={() => handleDelete(o.id)}
+                  className="px-5 py-3 text-red-400 hover:text-red-600 transition-colors"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -2328,9 +2378,19 @@ const UsersTab: React.FC<any> = ({
                   >
                     Configure
                   </button>
-                  {u.id !== user.id && (
+                  {u.id !== user.id && (user.role === UserRole.SUPER_ADMIN || user.role === UserRole.OUTLET_OWNER) && (
                     <button
                       onClick={() => {
+                        // Only SUPER_ADMIN can delete other SUPER_ADMINS or OUTLET_OWNERS
+                        if ((u.role === UserRole.SUPER_ADMIN || u.role === UserRole.OUTLET_OWNER) && user.role !== UserRole.SUPER_ADMIN) {
+                          alert('Only Super Admin can remove Super Admins or Outlet Owners.');
+                          return;
+                        }
+                        // OUTLET_OWNER can only delete users from their outlet
+                        if (user.role === UserRole.OUTLET_OWNER && u.outletId !== user.outletId) {
+                          alert('You can only manage users from your outlet.');
+                          return;
+                        }
                         if (
                           window.confirm(
                             "Strike this personnel from the sanctuary records?"
