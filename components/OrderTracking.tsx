@@ -31,46 +31,28 @@ const OrderTracking: React.FC<OrderTrackingProps> = ({
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // ✅ Firestore realtime order fetch (fixes "Locating your meal..." forever)
+  // Fetch order data
   useEffect(() => {
     if (!orderId) return;
 
-<<<<<<< HEAD
-    setLoading(true);
-=======
     const fetchOrder = async () => {
       try {
         const orders = await FirestoreDB.getOrders();
         const found = orders.find(o => o.id === orderId);
         if (found) setOrder(found);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching order:', error);
+        setLoading(false);
       }
     };
->>>>>>> 87b2a69 (Complete migration to Firebase Firestore - remove all localStorage and compatibility layers)
 
-    const cleanId = String(orderId).trim();
-    const ref = doc(db, "orders", cleanId);
-
-    const unsub = onSnapshot(
-      ref,
-      (snap) => {
-        if (!snap.exists()) {
-          setOrder(null);
-          setLoading(false);
-          return;
-        }
-        setOrder({ id: snap.id, ...(snap.data() as any) } as Order);
-        setLoading(false);
-      },
-      (err) => {
-        console.error("OrderTracking Firestore error:", err);
-        setOrder(null);
-        setLoading(false);
-      }
-    );
-
-    return () => unsub();
+    setLoading(true);
+    fetchOrder();
+    
+    // Poll for updates every 5 seconds
+    const interval = setInterval(fetchOrder, 5000);
+    return () => clearInterval(interval);
   }, [orderId]);
 
   const handleRatingSubmit = async () => {
@@ -85,30 +67,19 @@ const OrderTracking: React.FC<OrderTrackingProps> = ({
       customerName: user?.name || (order as any).customerName || "Anonymous",
       timestamp: Date.now(),
     };
-<<<<<<< HEAD
-
-    try {
-      setSubmitting(true);
-
-      // ✅ Save review in Firestore (collection: "reviews")
-      await addDoc(collection(db, "reviews"), {
-        ...review,
-        createdAt: serverTimestamp(),
-      });
-
-      setSubmitted(true);
-    } catch (e) {
-      console.error("Failed to submit review:", e);
-      alert("Could not submit feedback. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-=======
     
-    FirestoreDB.saveReview(review).then(() => {
-      setSubmitted(true);
-    }).catch(console.error);
->>>>>>> 87b2a69 (Complete migration to Firebase Firestore - remove all localStorage and compatibility layers)
+    setSubmitting(true);
+    FirestoreDB.saveReview(review)
+      .then(() => {
+        setSubmitted(true);
+      })
+      .catch(error => {
+        console.error('Failed to submit review:', error);
+        alert('Could not submit feedback. Please try again.');
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
   };
 
   // No orderId at all

@@ -56,7 +56,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBackToHome, initialIsStaff = f
     setFormData({ ...formData, phone: value });
   };
 
-  const handleCustomerAction = (e: React.FormEvent) => {
+  const handleCustomerAction = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
 
