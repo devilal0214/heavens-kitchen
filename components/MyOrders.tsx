@@ -17,6 +17,16 @@ const MyOrders: React.FC<MyOrdersProps> = ({ user, onTrackOrder }) => {
   const [selectedOutlet, setSelectedOutlet] = useState('all');
   const [filterDate, setFilterDate] = useState('');
 
+  // Fetch orders and outlets
+  useEffect(() => {
+    Promise.all([FirestoreDB.getOrders(), FirestoreDB.getOutlets()])
+      .then(([allOrders, allOutlets]) => {
+        setOrders(allOrders.filter(o => o.customerId === user.id).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)));
+        setOutlets(allOutlets);
+      })
+      .catch(console.error);
+  }, [user.id]);
+
   const generateInvoice = async (order: Order) => {
     const outlet = outlets.find(o => o.id === order.outletId);
     const globalSettings = await FirestoreDB.getGlobalSettings();

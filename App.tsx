@@ -141,12 +141,18 @@ const App: React.FC = () => {
       history: [{ status: OrderStatus.PENDING, time: Date.now(), updatedBy: 'System' }]
     };
 
-    FirestoreDB.createOrder(newOrder).catch(console.error);
-    setActiveOrderId(newOrder.id);
-    setState(prev => ({ ...prev, cart: [] }));
-    setIsCartOpen(false);
-    setView('tracking');
-    window.scrollTo(0, 0);
+    FirestoreDB.createOrder(newOrder)
+      .then((orderId) => {
+        setActiveOrderId(orderId);
+        setState(prev => ({ ...prev, cart: [] }));
+        setIsCartOpen(false);
+        setView('tracking');
+        window.scrollTo(0, 0);
+      })
+      .catch((error) => {
+        console.error('Error placing order:', error);
+        alert('Failed to place order. Please try again.');
+      });
   };
 
   const handleLogin = (user: UserProfile) => {

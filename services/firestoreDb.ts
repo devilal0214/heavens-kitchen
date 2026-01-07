@@ -319,6 +319,22 @@ export class FirestoreDB {
     }
   }
 
+  static async createOrder(order: Order): Promise<string> {
+    try {
+      const orderData = {
+        ...order,
+        createdAt: Timestamp.now(),
+        orderDate: new Date().toISOString()
+      };
+      const docRef = await addDoc(collection(db, 'orders'), orderData);
+      this.notify();
+      return docRef.id;
+    } catch (error) {
+      console.error('Error creating order:', error);
+      throw error;
+    }
+  }
+
   static async updateOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
     try {
       await updateDoc(doc(db, 'orders', orderId), { status });
