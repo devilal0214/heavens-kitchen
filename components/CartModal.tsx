@@ -75,10 +75,10 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose, items, onUpdateQ
   };
 
   const subtotal = items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-  const tax = subtotal * (settings.gstPercentage / 100);
+  const tax = settings ? subtotal * (settings.gstPercentage / 100) : 0;
   
   let deliveryCharge = 0;
-  if (distanceKm !== null) {
+  if (distanceKm !== null && settings) {
     const sortedTiers = [...settings.deliveryTiers].sort((a,b) => a.upToKm - b.upToKm);
     const matchingTier = sortedTiers.find(t => distanceKm <= t.upToKm);
     if (matchingTier) deliveryCharge = matchingTier.charge;
