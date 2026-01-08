@@ -120,7 +120,6 @@ const Contact: React.FC = () => {
   };
 
   return (
-<<<<<<< Updated upstream
     <div className="bg-white pb-20">
 
 
@@ -148,18 +147,6 @@ const Contact: React.FC = () => {
     <h2 className="text-4xl md:text-7xl font-playfair font-bold text-white drop-shadow-2xl leading-tight">
       Get in <span className="italic text-[#FFB30E]">Touch</span>
     </h2>
-=======
-    <div className="pt-28 bg-white pb-20">
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="text-center mb-16 animate-fade-up">
-          <h1 className="text-5xl md:text-7xl font-playfair mb-6 text-gray-900">
-            Get in Touch
-          </h1>
-          <p className="text-gray-500 text-lg italic">
-            "Connecting you to the heart of the Havens heritage."
-          </p>
-        </div>
->>>>>>> Stashed changes
 
     <div className="h-[1px] w-12 bg-white/30 mx-auto my-4 md:my-6"></div>
 

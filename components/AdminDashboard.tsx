@@ -743,10 +743,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
-            <h1 className="text-4xl md:text-5xl font-playfair font-bold text-gray-900">
+            <h1 className="text-4xl md:text-5xl font-playfair font-semibold text-gray-900">
               Management Portal
             </h1>
-            <p className="text-gray-400 text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em] mt-3">
+            <p className="text-gray-400 text-[10px] md:text-[12px] font-medium uppercase tracking-[0.4em] mt-3">
               Authorized Sanctuary Monitor{" "}
               <span className="text-[#C0392B]">
                 • {String(user.role).replace("_", " ")}
@@ -760,7 +760,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <select
                   value={selectedOutlet}
                   onChange={(e) => setSelectedOutlet(e.target.value)}
-                  className="appearance-none bg-white border border-gray-100 rounded-[20px] px-8 py-4 text-xs font-black uppercase tracking-widest shadow-xl shadow-black/5 outline-none hover:border-[#C0392B] transition-all cursor-pointer min-w-[220px]"
+                  className="appearance-none bg-white border border-gray-100 rounded-[15px] px-8 py-4 text-xs font-medium uppercase tracking-widest shadow-xl shadow-black/5 outline-none hover:border-[#C0392B] transition-all cursor-pointer min-w-[220px]"
                 >
                   <option value="all">All Outlets</option>
                   {outlets.map((o) => (
@@ -786,14 +786,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="bg-white border border-gray-100 rounded-[20px] px-8 py-4 text-xs font-black uppercase tracking-widest shadow-xl shadow-black/5">
+              <div className="bg-white border border-gray-100 rounded-[15px] px-8 py-4 text-xs font-medium uppercase tracking-widest shadow-xl shadow-black/5">
                 {outlets.find((o) => o.id === user.outletId)?.name ||
                   "Your Outlet"}
               </div>
             )}
 
             <button
-              className="bg-[#C0392B] text-white px-8 py-4 rounded-[20px] text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-red-900/10 border border-[#FFB30E]"
+              className="bg-[#C0392B] text-white px-8 py-4 rounded-[15px] text-[10px] font-medium uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-red-900/10 border border-[#FFB30E]"
               onClick={onLogout}
             >
               LOGOUT
@@ -802,7 +802,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {/* Tabs */}
-        <div className="bg-white p-2 rounded-[25px] shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-gray-100 mb-10 overflow-x-auto no-scrollbar flex items-center">
+        <div className="bg-white p-2 rounded-[15px] shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-gray-100 mb-10 overflow-x-auto no-scrollbar flex items-center">
           <div className="flex flex-nowrap gap-1 w-full">
             {(
               [
@@ -841,10 +841,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`flex-1 min-w-[120px] px-4 py-4 rounded-[18px] text-[9px] font-black uppercase tracking-[0.2em] transition-all shrink-0 ${
+                  className={`flex-1 min-w-[120px] px-4 py-4 rounded-[15px] text-[9px] font-medium uppercase tracking-[0.2em] transition-all shrink-0 ${
                     activeTab === tab
                       ? "bg-[#C0392B] text-white shadow-xl shadow-red-900/10 scale-105"
-                      : "text-gray-400 hover:text-gray-900 hover:bg-gray-50"
+                      : "text-zinc-900 hover:text-gray-900 hover:bg-gray-50 font-[800]"
                   }`}
                 >
                   {tab}
@@ -1159,15 +1159,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <ModalShell onClose={() => setIsMenuModalOpen(false)}>
           <form
             onSubmit={handleSaveMenu}
-            className="relative w-full max-w-5xl bg-white rounded-[50px] shadow-2xl p-10 md:p-14 animate-fade-up max-h-[95vh] overflow-y-auto border border-gray-100 no-scrollbar"
+            className="relative w-full max-w-5xl bg-white rounded-[15px] shadow-2xl p-10 md:p-14 animate-fade-up max-h-[95vh] overflow-y-auto border border-gray-100 no-scrollbar"
           >
-            <h3 className="text-4xl font-playfair font-bold mb-10 text-gray-900">
+            <h3 className="text-4xl font-playfair font-semibold mb-10 text-gray-900">
               {editingMenuId ? "Edit Menu Item" : "Add Menu Item"}
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 mb-12">
               <div className="md:col-span-2">
-                <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                   Name
                 </label>
                 <input
@@ -1176,12 +1176,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onChange={(e) =>
                     setFormItem({ ...formItem, name: e.target.value })
                   }
-                  className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all text-xl"
+                  className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all text-xl"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                   Description
                 </label>
                 <textarea
@@ -1189,13 +1189,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onChange={(e) =>
                     setFormItem({ ...formItem, description: e.target.value })
                   }
-                  className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all resize-none"
+                  className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all resize-none"
                   rows={2}
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                   Category
                 </label>
                 <select
@@ -1203,7 +1203,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onChange={(e) =>
                     setFormItem({ ...formItem, category: e.target.value })
                   }
-                  className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all"
+                  className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all"
                 >
                   {categories.map((c) => (
                     <option key={c} value={c}>
@@ -1214,7 +1214,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div>
-                <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                   Outlet
                 </label>
                 <select
@@ -1222,7 +1222,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onChange={(e) =>
                     setFormItem({ ...formItem, outletId: e.target.value })
                   }
-                  className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all"
+                  className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all"
                 >
                   <option value="all">All Outlets</option>
                   {outlets.map((o) => (
@@ -1234,7 +1234,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div>
-                <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                   Food Type
                 </label>
                 <select
@@ -1245,7 +1245,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       foodType: e.target.value as any,
                     })
                   }
-                  className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all"
+                  className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all"
                 >
                   <option value="Veg">Veg</option>
                   <option value="Non-Veg">Non-Veg</option>
@@ -1253,7 +1253,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div>
-                <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                   Spice Level
                 </label>
                 <select
@@ -1261,7 +1261,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onChange={(e) =>
                     setFormItem({ ...formItem, isSpicy: e.target.value as any })
                   }
-                  className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all"
+                  className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all"
                 >
                   <option value="None">None</option>
                   <option value="Mild">Mild</option>
@@ -1271,7 +1271,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                   Image URL
                 </label>
                 <input
@@ -1279,24 +1279,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onChange={(e) =>
                     setFormItem({ ...formItem, imageUrl: e.target.value })
                   }
-                  className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all mb-4"
+                  className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all mb-4"
                   placeholder="Enter image URL or upload below"
                 />
 
-                <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                   Or Upload Image
                 </label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
-                  className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all"
+                  className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-4 md:col-span-2">
                 <div>
-                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                  <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                     Full Price
                   </label>
                   <input
@@ -1306,11 +1306,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     onChange={(e) =>
                       setFormItem({ ...formItem, fullPrice: e.target.value })
                     }
-                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                    className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none text-center"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                  <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                     Half Price
                   </label>
                   <input
@@ -1319,11 +1319,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     onChange={(e) =>
                       setFormItem({ ...formItem, halfPrice: e.target.value })
                     }
-                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                    className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none text-center"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                  <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                     Qtr Price
                   </label>
                   <input
@@ -1332,14 +1332,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     onChange={(e) =>
                       setFormItem({ ...formItem, qtrPrice: e.target.value })
                     }
-                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                    className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none text-center"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4 md:col-span-2">
                 <div>
-                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                  <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                     Full Qty
                   </label>
                   <input
@@ -1348,11 +1348,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     onChange={(e) =>
                       setFormItem({ ...formItem, fullQty: e.target.value })
                     }
-                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                    className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none text-center"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                  <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                     Half Qty
                   </label>
                   <input
@@ -1361,11 +1361,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     onChange={(e) =>
                       setFormItem({ ...formItem, halfQty: e.target.value })
                     }
-                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                    className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none text-center"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                  <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                     Qtr Qty
                   </label>
                   <input
@@ -1374,14 +1374,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     onChange={(e) =>
                       setFormItem({ ...formItem, qtrQty: e.target.value })
                     }
-                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                    className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none text-center"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4 md:col-span-2">
                 <div>
-                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                  <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                     Full Serves
                   </label>
                   <input
@@ -1390,11 +1390,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     onChange={(e) =>
                       setFormItem({ ...formItem, fullServes: e.target.value })
                     }
-                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                    className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none text-center"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                  <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                     Half Serves
                   </label>
                   <input
@@ -1403,11 +1403,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     onChange={(e) =>
                       setFormItem({ ...formItem, halfServes: e.target.value })
                     }
-                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                    className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none text-center"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                  <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                     Qtr Serves
                   </label>
                   <input
@@ -1416,14 +1416,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     onChange={(e) =>
                       setFormItem({ ...formItem, qtrServes: e.target.value })
                     }
-                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                    className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none text-center"
                   />
                 </div>
               </div>
 
               <div className="md:col-span-2 pt-4">
-                <label className="flex items-center justify-between p-6 bg-gray-50 rounded-[24px]">
-                  <span className="text-xs font-black uppercase tracking-widest text-gray-400">
+                <label className="flex items-center justify-between p-6 bg-gray-50 rounded-[15px]">
+                  <span className="text-xs font-medium uppercase tracking-widest text-gray-400">
                     Available
                   </span>
                   <input
@@ -1442,7 +1442,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               {/* Inventory links */}
               <div className="md:col-span-2">
-                <p className="text-[10px] font-black uppercase text-gray-400 mb-3 tracking-widest">
+                <p className="text-[10px] font-medium uppercase text-gray-400 mb-3 tracking-widest">
                   Inventory Links (for auto minus)
                 </p>
                 <div className="space-y-3 max-h-64 overflow-y-auto pr-2 no-scrollbar">
@@ -1455,7 +1455,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       return (
                         <div
                           key={inv.id}
-                          className="bg-gray-50 rounded-[20px] p-4 flex items-center gap-4"
+                          className="bg-gray-50 rounded-[15px] p-4 flex items-center gap-4"
                         >
                           <input
                             type="checkbox"
@@ -1481,7 +1481,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             className="w-5 h-5 accent-[#C0392B]"
                           />
                           <div className="flex-1">
-                            <p className="font-bold text-sm text-gray-900">
+                            <p className="font-semibold text-sm text-gray-900">
                               {inv.name}{" "}
                               <span className="text-xs text-gray-400">
                                 ({inv.stock} {inv.unit})
@@ -1503,7 +1503,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                   ),
                                 }));
                               }}
-                              className="w-24 p-3 bg-white rounded-[14px] font-bold text-center"
+                              className="w-24 p-3 bg-white rounded-[14px] font-semibold text-center"
                               title="How much to minus per 1 order quantity"
                             />
                           )}
@@ -1517,14 +1517,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex gap-6 mt-12 pt-10 border-t border-gray-50">
               <button
                 type="submit"
-                className="flex-1 py-6 bg-gray-900 text-white rounded-[32px] font-black uppercase tracking-[0.3em] text-[11px] shadow-2xl border-2 border-[#FFB30E] hover:bg-black transition-all"
+                className="flex-1 py-6 bg-gray-900 text-white rounded-[32px] font-medium uppercase tracking-[0.3em] text-[11px] shadow-2xl border-2 border-[#FFB30E] hover:bg-black transition-all"
               >
                 SAVE
               </button>
               <button
                 type="button"
                 onClick={() => setIsMenuModalOpen(false)}
-                className="px-12 py-6 bg-gray-50 text-gray-400 rounded-[32px] font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 transition-all"
+                className="px-12 py-6 bg-gray-50 text-gray-400 rounded-[32px] font-medium uppercase tracking-widest text-[10px] hover:bg-gray-100 transition-all"
               >
                 CANCEL
               </button>
@@ -1545,9 +1545,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               setCategoryName("");
               setIsCategoryModalOpen(false);
             }}
-            className="relative w-full max-w-md bg-white rounded-[40px] p-10 animate-fade-up border border-gray-100"
+            className="relative w-full max-w-md bg-white rounded-[15px] p-10 animate-fade-up border border-gray-100"
           >
-            <h3 className="text-2xl font-playfair font-bold mb-6">
+            <h3 className="text-2xl font-playfair font-semibold mb-6">
               New Category
             </h3>
             <input
@@ -1555,20 +1555,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               autoFocus
               value={categoryName}
               onChange={(e) => setCategoryName(e.target.value)}
-              className="w-full p-5 bg-gray-50 rounded-2xl font-bold mb-8 outline-none border border-transparent focus:bg-white focus:border-red-100"
+              className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold mb-8 outline-none border border-transparent focus:bg-white focus:border-red-100"
               placeholder="e.g. Desserts"
             />
             <div className="flex gap-4">
               <button
                 type="submit"
-                className="flex-1 py-4 bg-[#C0392B] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest border-2 border-[#FFB30E]"
+                className="flex-1 py-4 bg-[#C0392B] text-white rounded-[15px] font-medium uppercase text-[10px] tracking-widest border-2 border-[#FFB30E]"
               >
                 Save
               </button>
               <button
                 type="button"
                 onClick={() => setIsCategoryModalOpen(false)}
-                className="px-6 py-4 bg-gray-50 text-gray-400 rounded-2xl font-black uppercase text-[10px]"
+                className="px-6 py-4 bg-gray-50 text-gray-400 rounded-[15px] font-medium uppercase text-[10px]"
               >
                 Cancel
               </button>
@@ -1581,9 +1581,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <ModalShell onClose={() => setIsOutletModalOpen(false)}>
           <form
             onSubmit={handleSaveOutlet}
-            className="relative w-full max-w-2xl bg-white rounded-[40px] p-12 animate-fade-up border border-gray-100 max-h-[90vh] overflow-y-auto no-scrollbar"
+            className="relative w-full max-w-2xl bg-white rounded-[15px] p-12 animate-fade-up border border-gray-100 max-h-[90vh] overflow-y-auto no-scrollbar"
           >
-            <h3 className="text-3xl font-playfair font-bold mb-8">Outlet</h3>
+            <h3 className="text-3xl font-playfair font-semibold mb-8">Outlet</h3>
 
             <div className="space-y-6 mb-10">
               <Input
@@ -1648,21 +1648,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   }
                   className="w-5 h-5 accent-[#C0392B]"
                 />
-                <span className="text-sm font-bold text-gray-700">Active</span>
+                <span className="text-sm font-semibold text-gray-700">Active</span>
               </div>
             </div>
 
             <div className="flex gap-4">
               <button
                 type="submit"
-                className="flex-1 py-5 bg-[#C0392B] text-white rounded-2xl font-black uppercase text-[11px] tracking-widest border-2 border-[#FFB30E]"
+                className="flex-1 py-5 bg-[#C0392B] text-white rounded-[15px] font-medium uppercase text-[11px] tracking-widest border-2 border-[#FFB30E]"
               >
                 Save
               </button>
               <button
                 type="button"
                 onClick={() => setIsOutletModalOpen(false)}
-                className="px-8 py-5 bg-gray-50 text-gray-400 rounded-2xl font-black uppercase text-[10px]"
+                className="px-8 py-5 bg-gray-50 text-gray-400 rounded-[15px] font-medium uppercase text-[10px]"
               >
                 Cancel
               </button>
@@ -1675,9 +1675,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <ModalShell onClose={() => setIsInventoryModalOpen(false)}>
           <form
             onSubmit={handleSaveInventory}
-            className="relative w-full max-w-xl bg-white rounded-[40px] p-12 animate-fade-up border border-gray-100"
+            className="relative w-full max-w-xl bg-white rounded-[15px] p-12 animate-fade-up border border-gray-100"
           >
-            <h3 className="text-3xl font-playfair font-bold mb-8">Inventory</h3>
+            <h3 className="text-3xl font-playfair font-semibold mb-8">Inventory</h3>
 
             <div className="space-y-6 mb-10">
               <Input
@@ -1715,14 +1715,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex gap-4">
               <button
                 type="submit"
-                className="flex-1 py-5 bg-[#C0392B] text-white rounded-2xl font-black uppercase text-[11px] tracking-widest border-2 border-[#FFB30E]"
+                className="flex-1 py-5 bg-[#C0392B] text-white rounded-[15px] font-medium uppercase text-[11px] tracking-widest border-2 border-[#FFB30E]"
               >
                 Save
               </button>
               <button
                 type="button"
                 onClick={() => setIsInventoryModalOpen(false)}
-                className="px-8 py-5 bg-gray-50 text-gray-400 rounded-2xl font-black uppercase text-[10px]"
+                className="px-8 py-5 bg-gray-50 text-gray-400 rounded-[15px] font-medium uppercase text-[10px]"
               >
                 Cancel
               </button>
@@ -1735,9 +1735,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <ModalShell onClose={() => setIsUserModalOpen(false)}>
           <form
             onSubmit={handleSaveUser}
-            className="relative w-full max-w-xl bg-white rounded-[40px] p-12 animate-fade-up border border-gray-100 max-h-[90vh] overflow-y-auto"
+            className="relative w-full max-w-xl bg-white rounded-[15px] p-12 animate-fade-up border border-gray-100 max-h-[90vh] overflow-y-auto"
           >
-            <h3 className="text-3xl font-playfair font-bold mb-8">
+            <h3 className="text-3xl font-playfair font-semibold mb-8">
               Staff User
             </h3>
 
@@ -1760,7 +1760,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                  <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                     Role
                   </label>
 
@@ -1816,7 +1816,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                  <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                     Outlet
                   </label>
                   <select
@@ -1824,7 +1824,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     onChange={(e) =>
                       setUserForm((p) => ({ ...p, outletId: e.target.value }))
                     }
-                    className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none"
+                    className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none"
                   >
                     <option value="all">All Outlets</option>
                     {outlets.map((o) => (
@@ -1838,7 +1838,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               {/* ✅ WORKING PERMISSIONS */}
               <div className="pt-8 border-t border-gray-100">
-                <label className="text-[11px] font-black uppercase text-gray-900 mb-6 block tracking-[0.3em] text-center">
+                <label className="text-[11px] font-medium uppercase text-gray-900 mb-6 block tracking-[0.3em] text-center">
                   Sanctuary Powers & Privileges
                 </label>
 
@@ -1849,15 +1849,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     return (
                       <div
                         key={key}
-                        className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-white hover:shadow-md transition-all"
+                        className="flex items-center justify-between p-4 bg-gray-50/50 rounded-[15px] border border-gray-100 hover:bg-white hover:shadow-md transition-all"
                       >
                         <div className="flex-1">
-                          <p className="text-[10px] font-black uppercase text-gray-700 tracking-wider">
+                          <p className="text-[10px] font-medium uppercase text-gray-700 tracking-wider">
                             {permissionLabel(key)}
                           </p>
                         </div>
 
-                        <div className="flex bg-gray-100 p-1 rounded-xl gap-1">
+                        <div className="flex bg-gray-100 p-1 rounded-[15px] gap-1">
                           <button
                             type="button"
                             onClick={() =>
@@ -1869,7 +1869,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 },
                               }))
                             }
-                            className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                            className={`px-4 py-2 rounded-lg text-[9px] font-medium uppercase tracking-widest transition-all ${
                               isOn
                                 ? "bg-[#C0392B] text-white shadow-lg"
                                 : "text-gray-400 hover:text-gray-600"
@@ -1889,7 +1889,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 },
                               }))
                             }
-                            className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                            className={`px-4 py-2 rounded-lg text-[9px] font-medium uppercase tracking-widest transition-all ${
                               !isOn
                                 ? "bg-black text-white shadow-lg"
                                 : "text-gray-400 hover:text-gray-600"
@@ -1908,14 +1908,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex gap-4">
               <button
                 type="submit"
-                className="flex-1 py-5 bg-[#C0392B] text-white rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-2xl border-2 border-[#FFB30E]"
+                className="flex-1 py-5 bg-[#C0392B] text-white rounded-[15px] font-medium uppercase text-[11px] tracking-widest shadow-2xl border-2 border-[#FFB30E]"
               >
                 Save
               </button>
               <button
                 type="button"
                 onClick={() => setIsUserModalOpen(false)}
-                className="px-8 py-5 bg-gray-50 text-gray-400 rounded-2xl font-black uppercase text-[10px]"
+                className="px-8 py-5 bg-gray-50 text-gray-400 rounded-[15px] font-medium uppercase text-[10px]"
               >
                 Cancel
               </button>
@@ -1987,9 +1987,9 @@ const StatsTab: React.FC<any> = ({
       />
     </div>
 
-    <div className="bg-white rounded-[50px] p-10 md:p-14 border border-gray-100 shadow-sm">
+    <div className="bg-white rounded-[15px] p-10 md:p-14 border border-gray-100 shadow-sm">
       <div className="flex justify-between items-center mb-10">
-        <h3 className="text-2xl font-playfair font-bold text-gray-900">
+        <h3 className="text-2xl font-playfair font-semibold text-gray-900">
           Revenue Analytics
         </h3>
         <div className="flex gap-3">
@@ -2000,7 +2000,7 @@ const StatsTab: React.FC<any> = ({
                 e.target.value === "all" ? "all" : Number(e.target.value)
               )
             }
-            className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-xs font-bold shadow-sm outline-none"
+            className="bg-gray-50 border border-gray-100 rounded-[15px] px-4 py-2 text-xs font-semibold shadow-sm outline-none"
           >
             <option value="all">All Months</option>
             {[
@@ -2026,7 +2026,7 @@ const StatsTab: React.FC<any> = ({
           <select
             value={statsYear}
             onChange={(e) => setStatsYear(Number(e.target.value))}
-            className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-xs font-bold shadow-sm outline-none"
+            className="bg-gray-50 border border-gray-100 rounded-[15px] px-4 py-2 text-xs font-semibold shadow-sm outline-none"
           >
             <option value={2026}>2026</option>
             <option value={2025}>2025</option>
@@ -2034,7 +2034,7 @@ const StatsTab: React.FC<any> = ({
 
           <button
             onClick={handleDownloadCSV}
-            className="bg-[#C0392B] text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg hover:bg-black transition-all"
+            className="bg-[#C0392B] text-white px-6 py-2 rounded-[15px] text-[10px] font-medium uppercase shadow-lg hover:bg-black transition-all"
           >
             Export
           </button>
@@ -2055,7 +2055,7 @@ const StatsTab: React.FC<any> = ({
                 className="w-full max-w-[35px] bg-gradient-to-t from-[#C0392B] to-[#E74C3C] rounded-t-xl transition-all duration-700 ease-out shadow-lg"
                 style={{ height: `${Math.max(height, d.value > 0 ? 2 : 0)}%` }}
               />
-              <p className="mt-4 text-[9px] font-black uppercase text-gray-400 tracking-widest">
+              <p className="mt-4 text-[9px] font-medium uppercase text-gray-400 tracking-widest">
                 {d.label}
               </p>
             </div>
@@ -2085,18 +2085,18 @@ const OrderTab: React.FC<{
       {live.map((order) => (
         <div
           key={order.id}
-          className="bg-white p-10 rounded-[50px] border border-gray-100 shadow-sm hover:shadow-2xl transition-all"
+          className="bg-white p-10 rounded-[15px] border border-gray-100 shadow-sm hover:shadow-2xl transition-all"
         >
           <div className="flex justify-between mb-8">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#C0392B] bg-red-50 px-4 py-1.5 rounded-xl">
+            <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#C0392B] bg-red-50 px-4 py-1.5 rounded-[15px]">
               {order.status}
             </span>
-            <span className="text-xl font-black text-gray-900 tabular-nums">
+            <span className="text-xl font-medium text-gray-900 tabular-nums">
               ₹{Number(order.total).toFixed(0)}
             </span>
           </div>
 
-          <h4 className="text-2xl font-bold text-gray-800 mb-2 truncate">
+          <h4 className="text-2xl font-semibold text-gray-800 mb-2 truncate">
             {order.customerName}
           </h4>
 
@@ -2120,7 +2120,7 @@ const OrderTab: React.FC<{
             {order.status === OrderStatus.PENDING && (
               <button
                 onClick={() => onUpdateStatus(order, OrderStatus.ACCEPTED)}
-                className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg"
+                className="flex-1 py-4 bg-emerald-500 text-white rounded-[15px] text-[10px] font-medium uppercase tracking-widest shadow-lg"
               >
                 Accept
               </button>
@@ -2129,7 +2129,7 @@ const OrderTab: React.FC<{
             {order.status === OrderStatus.ACCEPTED && (
               <button
                 onClick={() => onUpdateStatus(order, OrderStatus.PREPARING)}
-                className="flex-1 py-4 bg-amber-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg"
+                className="flex-1 py-4 bg-amber-500 text-white rounded-[15px] text-[10px] font-medium uppercase tracking-widest shadow-lg"
               >
                 Start Prep
               </button>
@@ -2138,7 +2138,7 @@ const OrderTab: React.FC<{
             {order.status === OrderStatus.PREPARING && (
               <button
                 onClick={() => onUpdateStatus(order, OrderStatus.READY)}
-                className="flex-1 py-4 bg-blue-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg"
+                className="flex-1 py-4 bg-blue-500 text-white rounded-[15px] text-[10px] font-medium uppercase tracking-widest shadow-lg"
               >
                 Ready
               </button>
@@ -2149,7 +2149,7 @@ const OrderTab: React.FC<{
                 onClick={() =>
                   onUpdateStatus(order, OrderStatus.OUT_FOR_DELIVERY)
                 }
-                className="flex-1 py-4 bg-purple-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg"
+                className="flex-1 py-4 bg-purple-500 text-white rounded-[15px] text-[10px] font-medium uppercase tracking-widest shadow-lg"
               >
                 Hand Over
               </button>
@@ -2158,7 +2158,7 @@ const OrderTab: React.FC<{
             {order.status === OrderStatus.OUT_FOR_DELIVERY && (
               <button
                 onClick={() => onUpdateStatus(order, OrderStatus.DELIVERED)}
-                className="flex-1 py-4 bg-[#C0392B] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg"
+                className="flex-1 py-4 bg-[#C0392B] text-white rounded-[15px] text-[10px] font-medium uppercase tracking-widest shadow-lg"
               >
                 Delivered
               </button>
@@ -2166,7 +2166,7 @@ const OrderTab: React.FC<{
 
             <button
               onClick={() => onUpdateStatus(order, OrderStatus.REJECTED)}
-              className="px-6 py-4 bg-gray-50 text-red-500 rounded-2xl text-[10px] font-black hover:bg-red-50"
+              className="px-6 py-4 bg-gray-50 text-red-500 rounded-[15px] text-[10px] font-medium hover:bg-red-50"
             >
               Reject
             </button>
@@ -2175,9 +2175,9 @@ const OrderTab: React.FC<{
       ))}
 
       {live.length === 0 && (
-        <div className="col-span-full py-40 text-center bg-gray-50/50 rounded-[50px] border border-dashed border-gray-200">
+        <div className="col-span-full py-40 text-center bg-gray-50/50 rounded-[15px] border border-dashed border-gray-200">
           <div className="text-6xl mb-6 opacity-20">📜</div>
-          <p className="text-gray-400 font-black uppercase tracking-[0.4em] text-[10px]">
+          <p className="text-gray-400 font-medium uppercase tracking-[0.4em] text-[10px]">
             No Live Orders
           </p>
         </div>
@@ -2202,13 +2202,13 @@ const MenuTab: React.FC<any> = ({
   );
 
   return (
-    <div className="bg-white rounded-[50px] p-12 border border-gray-100 shadow-sm">
+    <div className="bg-white rounded-[15px] p-12 border border-gray-100 shadow-sm">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
         <div>
-          <h3 className="text-4xl font-playfair font-bold text-gray-900">
+          <h3 className="text-4xl font-playfair font-semibold text-gray-900">
             Menu
           </h3>
-          <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">
+          <p className="text-gray-400 text-[10px] font-medium uppercase tracking-widest">
             Manage dishes
           </p>
         </div>
@@ -2216,13 +2216,13 @@ const MenuTab: React.FC<any> = ({
         <div className="flex gap-4">
           <button
             onClick={onAddCategory}
-            className="px-8 py-3 border-2 border-gray-100 rounded-2xl font-black uppercase text-[10px] text-gray-400 hover:bg-gray-50 transition-all tracking-widest"
+            className="px-8 py-3 border-2 border-gray-100 rounded-[15px] font-medium uppercase text-[10px] text-gray-400 hover:bg-gray-50 transition-all tracking-widest"
           >
             + Category
           </button>
           <button
             onClick={onAdd}
-            className="bg-[#C0392B] text-white px-10 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest"
+            className="bg-[#C0392B] text-white px-10 py-3 rounded-[15px] font-medium uppercase text-[10px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest"
           >
             + New Item
           </button>
@@ -2240,9 +2240,9 @@ const MenuTab: React.FC<any> = ({
           .map((item: MenuItem) => (
             <div
               key={item.id}
-              className="bg-white border border-gray-50 rounded-[45px] p-10 hover:shadow-2xl transition-all"
+              className="bg-white border border-gray-50 rounded-[15px] p-4 hover:shadow-2xl transition-all"
             >
-              <div className="aspect-video mb-8 overflow-hidden rounded-[35px] shadow-sm bg-gray-50 relative">
+              <div className="aspect-video mb-8 overflow-hidden rounded-[15px] shadow-sm bg-gray-50 relative">
                 <img
                   src={item.imageUrl}
                   alt={item.name}
@@ -2254,7 +2254,7 @@ const MenuTab: React.FC<any> = ({
                 />
                 <button
                   onClick={() => onDelete(item.id)}
-                  className="absolute top-4 right-4 w-10 h-10 bg-black/60 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-red-500"
+                  className="absolute top-4 right-4 w-10 h-10 bg-black/60 backdrop-blur-md text-white rounded-[15px] flex items-center justify-center hover:bg-red-500"
                   title="Delete"
                 >
                   🗑️
@@ -2262,11 +2262,11 @@ const MenuTab: React.FC<any> = ({
               </div>
 
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-2xl font-bold font-playfair text-gray-900">
+                <h4 className="text-2xl font-semibold font-playfair text-gray-900">
                   {item.name}
                 </h4>
                 <span
-                  className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-xl ${
+                  className={`text-[9px] font-medium uppercase tracking-widest px-3 py-1 rounded-[15px] ${
                     item.isAvailable
                       ? "bg-emerald-50 text-emerald-600"
                       : "bg-gray-100 text-gray-400"
@@ -2276,17 +2276,17 @@ const MenuTab: React.FC<any> = ({
                 </span>
               </div>
 
-              <p className="text-[10px] font-black uppercase text-gray-300 tracking-[0.2em] mb-10">
+              <p className="text-[10px] font-medium uppercase text-gray-300 tracking-[0.2em] mb-10">
                 {item.category}
               </p>
 
               <div className="flex justify-between items-center pt-6 border-t border-gray-50">
-                <span className="text-2xl font-black text-gray-900 tabular-nums">
+                <span className="text-2xl font-medium text-gray-900 tabular-nums">
                   ₹{item.price.full}
                 </span>
                 <button
                   onClick={() => onEdit(item)}
-                  className="px-6 py-2.5 bg-gray-50 text-gray-400 rounded-2xl text-[10px] font-black uppercase hover:bg-gray-900 hover:text-white transition-all tracking-widest"
+                  className="px-6 py-2.5 bg-gray-50 text-gray-400 rounded-[15px] text-[10px] font-medium uppercase hover:bg-gray-900 hover:text-white transition-all tracking-widest"
                 >
                   Edit
                 </button>
@@ -2306,19 +2306,19 @@ const InventoryTab: React.FC<any> = ({
   onEdit,
   onDelete,
 }) => (
-  <div className="bg-white rounded-[40px] p-10 md:p-14 border border-gray-100 shadow-sm">
+  <div className="bg-white rounded-[15px] p-10 md:p-14 border border-gray-100 shadow-sm">
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
       <div>
-        <h3 className="text-4xl font-playfair font-bold text-gray-800">
+        <h3 className="text-4xl font-playfair font-semibold text-gray-800">
           Inventory
         </h3>
-        <p className="text-[10px] font-black uppercase text-[#C0392B] tracking-[0.3em] mt-2">
+        <p className="text-[10px] font-medium uppercase text-[#C0392B] tracking-[0.3em] mt-2">
           Stock Monitor
         </p>
       </div>
       <button
         onClick={onAdd}
-        className="bg-[#C0392B] text-white px-10 py-4 rounded-2xl font-black uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest"
+        className="bg-[#C0392B] text-white px-10 py-4 rounded-[15px] font-medium uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest"
       >
         + Add Inventory
       </button>
@@ -2335,32 +2335,32 @@ const InventoryTab: React.FC<any> = ({
         .map((item: InventoryItem) => (
           <div
             key={item.id}
-            className="relative bg-white rounded-[45px] p-10 border border-gray-100 shadow-sm hover:shadow-2xl transition-all"
+            className="relative bg-white rounded-[15px] p-10 border border-gray-100 shadow-sm hover:shadow-2xl transition-all"
           >
             <button
               onClick={() => onDelete(item.id)}
-              className="absolute top-6 right-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-red-400 shadow hover:bg-red-500 hover:text-white"
+              className="absolute top-6 right-6 w-10 h-10 bg-white rounded-[15px] flex items-center justify-center text-red-400 shadow hover:bg-red-500 hover:text-white"
               title="Delete"
             >
               🗑️
             </button>
 
-            <h4 className="text-2xl font-playfair font-bold text-gray-800 mb-2">
+            <h4 className="text-2xl font-playfair font-semibold text-gray-800 mb-2">
               {item.name}
             </h4>
-            <p className="text-[8px] font-black uppercase text-gray-300 tracking-widest mb-8">
+            <p className="text-[8px] font-medium uppercase text-gray-300 tracking-widest mb-8">
               {item.outletId === "all"
                 ? "All Outlets"
                 : outlets.find((o: any) => o.id === item.outletId)?.name || ""}
             </p>
 
             <div className="flex items-center justify-between mb-8">
-              <span className="text-6xl font-playfair font-black text-gray-900 tabular-nums">
+              <span className="text-6xl font-playfair font-medium text-gray-900 tabular-nums">
                 {item.stock}
               </span>
               <button
                 onClick={() => onEdit(item)}
-                className="px-5 py-2.5 bg-gray-50 hover:bg-red-50 text-[10px] font-black uppercase text-[#C0392B] rounded-2xl shadow-sm transition-all tracking-widest"
+                className="px-5 py-2.5 bg-gray-50 hover:bg-red-50 text-[10px] font-medium uppercase text-[#C0392B] rounded-[15px] shadow-sm transition-all tracking-widest"
               >
                 Edit
               </button>
@@ -2378,19 +2378,19 @@ const OutletTab: React.FC<any> = ({
   onEdit,
   onDelete,
 }) => (
-  <div className="bg-white rounded-[40px] p-10 md:p-14 border border-gray-100 shadow-sm">
+  <div className="bg-white rounded-[15px] p-10 md:p-14 border border-gray-100 shadow-sm">
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
       <div>
-        <h3 className="text-4xl font-playfair font-bold text-gray-800">
+        <h3 className="text-4xl font-playfair font-semibold text-gray-800">
           Outlets
         </h3>
-        <p className="text-[10px] font-black uppercase text-[#C0392B] tracking-[0.3em] mt-2">
+        <p className="text-[10px] font-medium uppercase text-[#C0392B] tracking-[0.3em] mt-2">
           Outlet Management
         </p>
       </div>
       <button
         onClick={onAdd}
-        className="bg-[#C0392B] text-white px-10 py-4 rounded-2xl font-black uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest"
+        className="bg-[#C0392B] text-white px-10 py-4 rounded-[15px] font-medium uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest"
       >
         + Add Outlet
       </button>
@@ -2400,16 +2400,16 @@ const OutletTab: React.FC<any> = ({
       {outlets.map((o: Outlet) => (
         <div
           key={o.id}
-          className="bg-white border border-gray-100 rounded-[45px] p-8 hover:shadow-2xl transition-all"
+          className="bg-white border border-gray-100 rounded-[15px] p-4 hover:shadow-2xl transition-all"
         >
-          <div className="aspect-video mb-6 overflow-hidden rounded-[35px] shadow-sm bg-gray-50 relative">
+          <div className="aspect-video mb-6 overflow-hidden rounded-[15px] shadow-sm bg-gray-50 relative">
             <img
               src={o.imageUrl}
               className="w-full h-full object-cover hover:scale-110 transition-transform duration-1000"
             />
             <div className="absolute top-4 left-4">
               <span
-                className={`px-4 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                className={`px-4 py-1 rounded-[15px] text-[8px] font-medium uppercase tracking-widest ${
                   (o as any).isActive
                     ? "bg-emerald-500 text-white"
                     : "bg-gray-400 text-white"
@@ -2420,17 +2420,17 @@ const OutletTab: React.FC<any> = ({
             </div>
           </div>
 
-          <h4 className="text-2xl font-bold font-playfair text-gray-900 mb-2">
+          <h4 className="text-2xl font-semibold font-playfair text-gray-900 mb-2">
             {o.name}
           </h4>
-          <p className="text-[10px] font-black uppercase text-gray-300 tracking-widest mb-6 truncate">
+          <p className="text-[10px] font-medium uppercase text-gray-300 tracking-widest mb-6 truncate">
             {o.address}
           </p>
 
           <div className="flex gap-4 pt-6 border-t border-gray-50">
             <button
               onClick={() => onEdit(o)}
-              className="flex-1 py-3 bg-gray-50 text-gray-400 rounded-xl text-[10px] font-black uppercase hover:bg-gray-900 hover:text-white transition-all"
+              className="flex-1 py-3 bg-gray-50 text-gray-400 rounded-[15px] text-[10px] font-medium uppercase hover:bg-gray-900 hover:text-white transition-all"
             >
               Edit
             </button>
@@ -2496,9 +2496,9 @@ const HistoryTab: React.FC<{
   }, [historyDateFilter, setHistoryPage]);
 
   return (
-    <div className="bg-white rounded-[40px] p-10 md:p-14 border border-gray-100 shadow-sm">
+    <div className="bg-white rounded-[15px] p-10 md:p-14 border border-gray-100 shadow-sm">
       <div className="flex justify-between items-center mb-12">
-        <h3 className="text-4xl font-playfair font-bold text-gray-800">
+        <h3 className="text-4xl font-playfair font-semibold text-gray-800">
           Order History
         </h3>
         <div className="flex gap-4 items-center">
@@ -2506,12 +2506,12 @@ const HistoryTab: React.FC<{
             type="date"
             value={historyDateFilter}
             onChange={(e) => setHistoryDateFilter(e.target.value)}
-            className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-sm font-bold shadow-sm outline-none"
+            className="bg-gray-50 border border-gray-100 rounded-[15px] px-4 py-2 text-sm font-semibold shadow-sm outline-none"
           />
           {historyDateFilter && (
             <button
               onClick={() => setHistoryDateFilter("")}
-              className="bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-600"
+              className="bg-red-500 text-white px-4 py-2 rounded-[15px] text-sm font-semibold hover:bg-red-600"
             >
               Clear
             </button>
@@ -2522,21 +2522,21 @@ const HistoryTab: React.FC<{
         {paginatedOrders.map((order: any) => (
           <div
             key={order.id}
-            className="bg-gray-50 p-8 rounded-[40px] flex justify-between items-center"
+            className="bg-gray-50 p-8 rounded-[15px] flex justify-between items-center"
           >
             <div>
-              <h4 className="text-xl font-bold text-gray-900">
+              <h4 className="text-xl font-semibold text-gray-900">
                 {order.customerName}
               </h4>
-              <p className="text-[10px] font-mono text-gray-400 font-bold">
+              <p className="text-[10px] font-mono text-gray-400 font-semibold">
                 #{order.id}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-black text-gray-900 tabular-nums">
+              <p className="text-2xl font-medium text-gray-900 tabular-nums">
                 ₹{Number(order.total).toFixed(0)}
               </p>
-              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+              <p className="text-[10px] font-medium uppercase text-gray-400 tracking-widest">
                 {order.paymentMethod} •{" "}
                 {new Date(order.timestamp).toLocaleDateString()}
               </p>
@@ -2549,7 +2549,7 @@ const HistoryTab: React.FC<{
           <button
             onClick={() => setHistoryPage(Math.max(1, historyPage - 1))}
             disabled={historyPage === 1}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50"
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-[15px] disabled:opacity-50"
           >
             Previous
           </button>
@@ -2561,7 +2561,7 @@ const HistoryTab: React.FC<{
               setHistoryPage(Math.min(totalPages, historyPage + 1))
             }
             disabled={historyPage === totalPages}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50"
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-[15px] disabled:opacity-50"
           >
             Next
           </button>
@@ -2850,13 +2850,13 @@ const BillingTab: React.FC<{
   };
 
   return (
-    <div className="bg-white rounded-[40px] p-10 md:p-14 border border-gray-100 shadow-sm">
+    <div className="bg-white rounded-[15px] p-10 md:p-14 border border-gray-100 shadow-sm">
       <div className="flex justify-between items-start mb-12 gap-6">
         <div>
-          <h3 className="text-4xl font-playfair font-bold text-gray-900">
+          <h3 className="text-4xl font-playfair font-semibold text-gray-900">
             Billing
           </h3>
-          <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+          <p className="text-[10px] font-medium uppercase text-gray-400 tracking-widest">
             Invoices & Sales
           </p>
         </div>
@@ -2864,7 +2864,7 @@ const BillingTab: React.FC<{
           <select
             value={billingCategoryFilter}
             onChange={(e) => setBillingCategoryFilter(e.target.value)}
-            className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-sm font-bold shadow-sm outline-none"
+            className="bg-gray-50 border border-gray-100 rounded-[15px] px-4 py-2 text-sm font-semibold shadow-sm outline-none"
           >
             <option value="all">All Orders</option>
             <option value="AUTO">Online Orders</option>
@@ -2874,19 +2874,19 @@ const BillingTab: React.FC<{
             type="date"
             value={billingDateFilter}
             onChange={(e) => setBillingDateFilter(e.target.value)}
-            className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-sm font-bold shadow-sm outline-none"
+            className="bg-gray-50 border border-gray-100 rounded-[15px] px-4 py-2 text-sm font-semibold shadow-sm outline-none"
           />
           {billingDateFilter && (
             <button
               onClick={() => setBillingDateFilter("")}
-              className="bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-600"
+              className="bg-red-500 text-white px-4 py-2 rounded-[15px] text-sm font-semibold hover:bg-red-600"
             >
               Clear
             </button>
           )}
           <button
             onClick={onCreateManualInvoice}
-            className="bg-[#C0392B] text-white px-10 py-4 rounded-2xl font-black uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all"
+            className="bg-[#C0392B] text-white px-10 py-4 rounded-[15px] font-medium uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all"
           >
             + Manual Invoice
           </button>
@@ -2897,48 +2897,48 @@ const BillingTab: React.FC<{
         {paginatedInvoices.map((inv) => (
           <div
             key={inv.id}
-            className="flex justify-between items-center p-8 bg-gray-50 rounded-[35px]"
+            className="flex justify-between items-center p-8 bg-gray-50 rounded-[15px]"
           >
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-xl font-bold text-gray-800">
+                <h4 className="text-xl font-semibold text-gray-800">
                   {inv.customerName}
                 </h4>
                 {inv.type === "AUTO" && (
-                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold uppercase">
+                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded-[15px] text-xs font-semibold uppercase">
                     Online
                   </span>
                 )}
                 {inv.type === "MANUAL" && (
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold uppercase">
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-[15px] text-xs font-semibold uppercase">
                     Manual
                   </span>
                 )}
               </div>
-              <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
+              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">
                 {new Date(inv.timestamp).toLocaleString()} •{" "}
                 {outlets.find((o: any) => o.id === inv.outletId)?.name}
               </p>
             </div>
             <div className="text-right flex items-center gap-4">
               <div>
-                <p className="text-2xl font-black text-gray-900 tabular-nums">
+                <p className="text-2xl font-medium text-gray-900 tabular-nums">
                   ₹{Number(inv.total).toFixed(0)}
                 </p>
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                <p className="text-[9px] font-medium text-gray-400 uppercase tracking-widest">
                   {inv.paymentMethod}
                 </p>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleDownloadInvoice(inv)}
-                  className="px-3 py-2 bg-green-500 text-white rounded-lg text-xs font-bold hover:bg-green-600"
+                  className="px-3 py-2 bg-green-500 text-white rounded-[15px] text-xs font-semibold hover:bg-green-600"
                 >
                   Download
                 </button>
                 <button
                   onClick={() => handlePrintInvoice(inv)}
-                  className="px-3 py-2 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600"
+                  className="px-3 py-2 bg-blue-500 text-white rounded-[15px] text-xs font-semibold hover:bg-blue-600"
                 >
                   Print
                 </button>
@@ -2953,7 +2953,7 @@ const BillingTab: React.FC<{
           <button
             onClick={() => setBillingPage(Math.max(1, billingPage - 1))}
             disabled={billingPage === 1}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50"
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-[15px] disabled:opacity-50"
           >
             Previous
           </button>
@@ -2965,7 +2965,7 @@ const BillingTab: React.FC<{
               setBillingPage(Math.min(totalPages, billingPage + 1))
             }
             disabled={billingPage === totalPages}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50"
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-[15px] disabled:opacity-50"
           >
             Next
           </button>
@@ -3011,12 +3011,12 @@ const SettingsTab: React.FC<any> = ({
   };
 
   return (
-    <div className="bg-white rounded-[50px] p-12 border border-gray-100 shadow-sm max-w-4xl mx-auto">
-      <h3 className="text-3xl font-playfair font-bold mb-8">Settings</h3>
+    <div className="bg-white rounded-[15px] p-12 border border-gray-100 shadow-sm max-w-4xl mx-auto">
+      <h3 className="text-3xl font-playfair font-semibold mb-8">Settings</h3>
 
       <form onSubmit={onSave} className="space-y-8">
         <div>
-          <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+          <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
             GST (%)
           </label>
           <input
@@ -3028,13 +3028,13 @@ const SettingsTab: React.FC<any> = ({
                 gstPercentage: Number(e.target.value),
               })
             }
-            className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none text-xl text-center"
+            className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none text-xl text-center"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+            <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
               Free Delivery Threshold (₹)
             </label>
             <input
@@ -3046,11 +3046,11 @@ const SettingsTab: React.FC<any> = ({
                   freeDeliveryThreshold: Number(e.target.value),
                 })
               }
-              className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none text-xl text-center"
+              className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none text-xl text-center"
             />
           </div>
           <div>
-            <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+            <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
               Free Delivery Distance Limit (km)
             </label>
             <input
@@ -3063,20 +3063,20 @@ const SettingsTab: React.FC<any> = ({
                   freeDeliveryDistanceLimit: Number(e.target.value),
                 })
               }
-              className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none text-xl text-center"
+              className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none text-xl text-center"
             />
           </div>
         </div>
 
         <div>
           <div className="flex justify-between items-center mb-4">
-            <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+            <label className="text-[10px] font-medium uppercase text-gray-400 tracking-widest">
               Delivery Tiers (Distance-based Charges)
             </label>
             <button
               type="button"
               onClick={addDeliveryTier}
-              className="bg-[#C0392B] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-600"
+              className="bg-[#C0392B] text-white px-4 py-2 rounded-[15px] text-xs font-semibold hover:bg-red-600"
             >
               + Add Tier
             </button>
@@ -3087,15 +3087,15 @@ const SettingsTab: React.FC<any> = ({
               .map((tier, index) => (
                 <div
                   key={tier.id}
-                  className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl"
+                  className="flex items-center gap-4 p-4 bg-gray-50 rounded-[15px]"
                 >
                   <div className="flex-1">
-                    <label className="text-[9px] font-black uppercase text-gray-500 mb-1 block tracking-widest">
+                    <label className="text-[9px] font-medium uppercase text-gray-500 mb-1 block tracking-widest">
                       Up to {index === 0 ? "" : "Next"} {tier.upToKm} km
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[8px] font-bold uppercase text-gray-400 mb-1 block">
+                        <label className="text-[8px] font-semibold uppercase text-gray-400 mb-1 block">
                           Distance (km)
                         </label>
                         <input
@@ -3109,11 +3109,11 @@ const SettingsTab: React.FC<any> = ({
                               Number(e.target.value)
                             )
                           }
-                          className="w-full p-3 bg-white rounded-xl font-bold text-center text-sm"
+                          className="w-full p-3 bg-white rounded-[15px] font-semibold text-center text-sm"
                         />
                       </div>
                       <div>
-                        <label className="text-[8px] font-bold uppercase text-gray-400 mb-1 block">
+                        <label className="text-[8px] font-semibold uppercase text-gray-400 mb-1 block">
                           Charge (₹)
                         </label>
                         <input
@@ -3127,7 +3127,7 @@ const SettingsTab: React.FC<any> = ({
                               Number(e.target.value)
                             )
                           }
-                          className="w-full p-3 bg-white rounded-xl font-bold text-center text-sm"
+                          className="w-full p-3 bg-white rounded-[15px] font-semibold text-center text-sm"
                         />
                       </div>
                     </div>
@@ -3135,7 +3135,7 @@ const SettingsTab: React.FC<any> = ({
                   <button
                     type="button"
                     onClick={() => removeDeliveryTier(tier.id)}
-                    className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 text-sm"
+                    className="w-8 h-8 bg-red-500 text-white rounded-[15px] flex items-center justify-center hover:bg-red-600 text-sm"
                   >
                     ×
                   </button>
@@ -3152,7 +3152,7 @@ const SettingsTab: React.FC<any> = ({
 
         <button
           type="submit"
-          className="w-full py-6 bg-gray-900 text-white rounded-[32px] font-black uppercase text-xs shadow-2xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest"
+          className="w-full py-6 bg-gray-900 text-white rounded-[15px] font-medium uppercase text-xs shadow-2xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest"
         >
           Save
         </button>
@@ -3169,13 +3169,13 @@ const UsersTab: React.FC<any> = ({
   onEdit,
   onDelete,
 }) => (
-  <div className="bg-white rounded-[40px] p-10 md:p-14 border border-gray-100 shadow-sm">
+  <div className="bg-white rounded-[15px] p-10 md:p-14 border border-gray-100 shadow-sm">
     <div className="flex justify-between items-start mb-12 gap-6">
-      <h3 className="text-4xl font-playfair font-bold text-gray-800">Staff</h3>
+      <h3 className="text-4xl font-playfair font-semibold text-gray-800">Staff</h3>
 
       <button
         onClick={onAdd}
-        className="bg-[#C0392B] text-white px-10 py-4 rounded-2xl font-black uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all"
+        className="bg-[#C0392B] text-white px-10 py-4 rounded-[15px] font-medium uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all"
       >
         + Add Staff
       </button>
@@ -3185,13 +3185,13 @@ const UsersTab: React.FC<any> = ({
       <table className="w-full text-left">
         <thead>
           <tr className="border-b border-gray-50">
-            <th className="py-4 px-4 text-[10px] font-black uppercase text-gray-400">
+            <th className="py-4 px-4 text-[10px] font-medium uppercase text-gray-400">
               Name
             </th>
-            <th className="py-4 px-4 text-[10px] font-black uppercase text-gray-400">
+            <th className="py-4 px-4 text-[10px] font-medium uppercase text-gray-400">
               Role
             </th>
-            <th className="py-4 px-4 text-[10px] font-black uppercase text-gray-400">
+            <th className="py-4 px-4 text-[10px] font-medium uppercase text-gray-400">
               Outlet
             </th>
             <th className="py-4 px-4"></th>
@@ -3205,17 +3205,17 @@ const UsersTab: React.FC<any> = ({
               className="border-b border-gray-50 hover:bg-gray-50/50"
             >
               <td className="py-6 px-4">
-                <p className="font-bold text-sm text-gray-900">{u.name}</p>
+                <p className="font-semibold text-sm text-gray-900">{u.name}</p>
                 <p className="text-[10px] font-medium text-gray-400">
                   {u.email}
                 </p>
               </td>
               <td className="py-6 px-4">
-                <span className="bg-gray-100 text-gray-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">
+                <span className="bg-gray-100 text-gray-500 px-3 py-1 rounded-[15px] text-[9px] font-medium uppercase tracking-widest">
                   {u.role}
                 </span>
               </td>
-              <td className="py-6 px-4 text-xs font-bold text-gray-600">
+              <td className="py-6 px-4 text-xs font-semibold text-gray-600">
                 {u.outletId === "all"
                   ? "Universal"
                   : outlets.find((o: any) => o.id === u.outletId)?.name}
@@ -3224,14 +3224,14 @@ const UsersTab: React.FC<any> = ({
                 <div className="flex justify-end gap-4">
                   <button
                     onClick={() => onEdit(u)}
-                    className="text-[#C0392B] text-[10px] font-black uppercase hover:underline opacity-60 hover:opacity-100"
+                    className="text-[#C0392B] text-[10px] font-medium uppercase hover:underline opacity-60 hover:opacity-100"
                   >
                     Edit
                   </button>
                   {u.id !== user.id && (
                     <button
                       onClick={() => onDelete(u.id, u.role, u.outletId)}
-                      className="text-red-500 text-[10px] font-black uppercase hover:underline opacity-40 hover:opacity-100"
+                      className="text-red-500 text-[10px] font-medium uppercase hover:underline opacity-40 hover:opacity-100"
                     >
                       Delete
                     </button>
@@ -3245,7 +3245,7 @@ const UsersTab: React.FC<any> = ({
             <tr>
               <td
                 colSpan={4}
-                className="py-16 text-center text-gray-400 font-bold"
+                className="py-16 text-center text-gray-400 font-semibold"
               >
                 No staff users
               </td>
@@ -3333,17 +3333,17 @@ const ManualInvoiceModal: React.FC<any> = ({
 
   return (
     <ModalShell onClose={onClose}>
-      <div className="relative w-full max-w-7xl bg-white rounded-[60px] shadow-2xl p-10 md:p-14 flex flex-col md:flex-row gap-12 max-h-[90vh] overflow-hidden border border-gray-100">
+      <div className="relative w-full max-w-7xl bg-white rounded-[15px] shadow-2xl p-10 md:p-14 flex flex-col md:flex-row gap-12 max-h-[90vh] overflow-hidden border border-gray-100">
         <div className="flex-1 flex flex-col min-h-0">
           <div className="mb-8">
-            <h3 className="text-4xl font-playfair font-bold text-gray-900">
+            <h3 className="text-4xl font-playfair font-semibold text-gray-900">
               Manual Invoice
             </h3>
           </div>
 
-          <div className="bg-gray-50 p-8 rounded-[40px] mb-8 border border-gray-100 flex flex-col gap-6">
+          <div className="bg-gray-50 p-8 rounded-[15px] mb-8 border border-gray-100 flex flex-col gap-6">
             <div>
-              <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+              <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                 Customer
               </label>
               <input
@@ -3351,7 +3351,7 @@ const ManualInvoiceModal: React.FC<any> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, customerName: e.target.value })
                 }
-                className="w-full p-5 bg-white rounded-2xl font-bold outline-none"
+                className="w-full p-5 bg-white rounded-[15px] font-semibold outline-none"
               />
             </div>
 
@@ -3361,7 +3361,7 @@ const ManualInvoiceModal: React.FC<any> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, outletId: e.target.value })
                 }
-                className="bg-white border border-gray-100 rounded-2xl px-5 py-3 text-xs font-bold"
+                className="bg-white border border-gray-100 rounded-[15px] px-5 py-3 text-xs font-semibold"
               >
                 {outlets.map((o: any) => (
                   <option key={o.id} value={o.id}>
@@ -3378,7 +3378,7 @@ const ManualInvoiceModal: React.FC<any> = ({
                     paymentMethod: e.target.value as any,
                   })
                 }
-                className="bg-white border border-gray-100 rounded-2xl px-5 py-3 text-xs font-bold"
+                className="bg-white border border-gray-100 rounded-[15px] px-5 py-3 text-xs font-semibold"
               >
                 <option value="CASH">CASH</option>
                 <option value="UPI">UPI</option>
@@ -3388,7 +3388,7 @@ const ManualInvoiceModal: React.FC<any> = ({
             </div>
 
             <div>
-              <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+              <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
                 Distance (km)
               </label>
               <input
@@ -3397,7 +3397,7 @@ const ManualInvoiceModal: React.FC<any> = ({
                 min="0"
                 value={distanceKm}
                 onChange={(e) => setDistanceKm(Number(e.target.value) || 0)}
-                className="w-full p-5 bg-white rounded-2xl font-bold outline-none"
+                className="w-full p-5 bg-white rounded-[15px] font-semibold outline-none"
                 placeholder="Enter delivery distance"
               />
             </div>
@@ -3406,7 +3406,7 @@ const ManualInvoiceModal: React.FC<any> = ({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search menu..."
-              className="w-full p-5 bg-white rounded-2xl font-bold outline-none"
+              className="w-full p-5 bg-white rounded-[15px] font-semibold outline-none"
             />
           </div>
 
@@ -3419,11 +3419,11 @@ const ManualInvoiceModal: React.FC<any> = ({
               .map((m: any) => (
                 <div
                   key={m.id}
-                  className="p-5 bg-white border border-gray-100 rounded-[25px] flex justify-between items-center"
+                  className="p-5 bg-white border border-gray-100 rounded-[15px] flex justify-between items-center"
                 >
                   <div>
-                    <p className="font-bold">{m.name}</p>
-                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
+                    <p className="font-semibold">{m.name}</p>
+                    <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">
                       {m.category}
                     </p>
                   </div>
@@ -3434,7 +3434,7 @@ const ManualInvoiceModal: React.FC<any> = ({
                           <button
                             key={v}
                             onClick={() => addItem(m, v)}
-                            className="px-4 py-2 bg-gray-900 text-white text-[9px] font-black uppercase rounded-xl hover:bg-[#C0392B]"
+                            className="px-4 py-2 bg-gray-900 text-white text-[9px] font-medium uppercase rounded-[15px] hover:bg-[#C0392B]"
                           >
                             ADD {v.toUpperCase()}
                           </button>
@@ -3446,7 +3446,7 @@ const ManualInvoiceModal: React.FC<any> = ({
           </div>
         </div>
 
-        <div className="w-full md:w-[420px] bg-gray-50 rounded-[50px] p-10 flex flex-col border border-gray-100">
+        <div className="w-full md:w-[420px] bg-gray-50 rounded-[15px] p-10 flex flex-col border border-gray-100">
           <div className="flex-grow overflow-y-auto space-y-4 no-scrollbar mb-8 pr-2">
             {selectedItems.map((item: any) => (
               <div
@@ -3454,15 +3454,15 @@ const ManualInvoiceModal: React.FC<any> = ({
                 className="bg-white p-5 rounded-[22px] border border-gray-100 flex justify-between items-center"
               >
                 <div>
-                  <p className="font-black text-sm">{item.name}</p>
-                  <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest">
+                  <p className="font-medium text-sm">{item.name}</p>
+                  <p className="text-[9px] text-gray-400 font-medium uppercase tracking-widest">
                     {item.variant.toUpperCase()} • ₹{item.price} ×{" "}
                     {item.quantity}
                   </p>
                 </div>
                 <button
                   onClick={() => removeItem(item.menuItemId, item.variant)}
-                  className="w-10 h-10 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white"
+                  className="w-10 h-10 bg-red-50 text-red-500 rounded-[15px] hover:bg-red-500 hover:text-white"
                 >
                   −
                 </button>
@@ -3471,19 +3471,19 @@ const ManualInvoiceModal: React.FC<any> = ({
           </div>
 
           <div className="space-y-3 border-t border-dashed border-gray-200 pt-6">
-            <div className="flex justify-between text-[11px] font-black uppercase text-gray-400 tracking-widest">
+            <div className="flex justify-between text-[11px] font-medium uppercase text-gray-400 tracking-widest">
               <span>SUBTOTAL</span>
               <span>₹{subtotal.toFixed(0)}</span>
             </div>
-            <div className="flex justify-between text-[11px] font-black uppercase text-gray-400 tracking-widest">
+            <div className="flex justify-between text-[11px] font-medium uppercase text-gray-400 tracking-widest">
               <span>GST ({gstPercentage}%)</span>
               <span>₹{tax.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-[11px] font-black uppercase text-gray-400 tracking-widest">
+            <div className="flex justify-between text-[11px] font-medium uppercase text-gray-400 tracking-widest">
               <span>DELIVERY ({distanceKm}km)</span>
               <span>₹{deliveryCharge.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-3xl font-playfair font-black pt-3 border-t border-gray-100 text-gray-900">
+            <div className="flex justify-between text-3xl font-playfair font-medium pt-3 border-t border-gray-100 text-gray-900">
               <span>TOTAL</span>
               <span className="text-[#C0392B]">₹{total.toFixed(0)}</span>
             </div>
@@ -3505,7 +3505,7 @@ const ManualInvoiceModal: React.FC<any> = ({
                 timestamp: Date.now(),
               })
             }
-            className="w-full py-5 bg-gray-900 text-white rounded-[24px] font-black uppercase text-[11px] tracking-[0.25em] mt-8 hover:bg-[#C0392B] disabled:opacity-30"
+            className="w-full py-5 bg-gray-900 text-white rounded-[15px] font-medium uppercase text-[11px] tracking-[0.25em] mt-8 hover:bg-[#C0392B] disabled:opacity-30"
           >
             Finalize
           </button>
@@ -3521,16 +3521,16 @@ const StatCard: React.FC<{
   icon: string;
   color: "emerald" | "orange" | "red" | "blue";
 }> = ({ label, value, icon, color }) => (
-  <div className="bg-white p-12 rounded-[60px] shadow-sm border border-gray-100 hover:shadow-2xl transition-all">
+  <div className="bg-white p-12 rounded-[15px] shadow-sm border border-gray-100 hover:shadow-2xl transition-all">
     <div
-      className={`w-20 h-20 rounded-[30px] ${statBgMap[color]} flex items-center justify-center text-4xl mb-10 shadow-inner`}
+      className={`w-20 h-20 rounded-[15px] ${statBgMap[color]} flex items-center justify-center text-4xl mb-10 shadow-inner`}
     >
       {icon}
     </div>
-    <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.25em] mb-2">
+    <h4 className="text-[11px] font-medium text-gray-400 uppercase tracking-[0.25em] mb-2">
       {label}
     </h4>
-    <p className="text-6xl font-playfair font-black text-gray-900 tracking-tighter">
+    <p className="text-3xl font-inter font-medium text-gray-900 tracking-tighter">
       {value}
     </p>
   </div>
@@ -3555,14 +3555,14 @@ const Input: React.FC<{
   onChange: (v: string) => void;
 }> = ({ label, value, onChange }) => (
   <div>
-    <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+    <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
       {label}
     </label>
     <input
       required
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none"
+      className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none"
     />
   </div>
 );
@@ -3573,7 +3573,7 @@ const NumberInput: React.FC<{
   onChange: (v: number) => void;
 }> = ({ label, value, onChange }) => (
   <div>
-    <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+    <label className="text-[10px] font-medium uppercase text-gray-400 mb-2 block tracking-widest">
       {label}
     </label>
     <input
@@ -3582,7 +3582,7 @@ const NumberInput: React.FC<{
       required
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none"
+      className="w-full p-5 bg-gray-50 rounded-[15px] font-semibold outline-none"
     />
   </div>
 );
