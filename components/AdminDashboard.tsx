@@ -1,6 +1,9 @@
 // AdminDashboard.tsx
 import React, { useEffect, useMemo, useState } from "react";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "../config/firebase";
 import FirestoreDB from "../services/firestoreDb";
+import html2pdf from "html2pdf.js";
 import {
   Order,
   MenuItem,
@@ -15,6 +18,48 @@ import {
   OrderItem,
 } from "../types";
 
+// Utility function to calculate delivery charge based on distance and tiers
+const calculateDeliveryCharge = (
+  distanceKm: number,
+  subtotal: number,
+  globalSettings: GlobalSettings
+): number => {
+  // Free delivery for orders above threshold
+  if (subtotal >= globalSettings.freeDeliveryThreshold) {
+    return 0;
+  }
+
+  // Free delivery within distance limit
+  if (distanceKm <= globalSettings.freeDeliveryDistanceLimit) {
+    return 0;
+  }
+
+  // Use delivery tiers if configured
+  if (globalSettings.deliveryTiers && globalSettings.deliveryTiers.length > 0) {
+    // Sort tiers by distance ascending
+    const sortedTiers = [...globalSettings.deliveryTiers].sort(
+      (a, b) => a.upToKm - b.upToKm
+    );
+
+    // Find the appropriate tier for the distance
+    for (const tier of sortedTiers) {
+      if (distanceKm <= tier.upToKm) {
+        return tier.charge;
+      }
+    }
+
+    // If distance is beyond all tiers, use the last tier's charge
+    return sortedTiers[sortedTiers.length - 1]?.charge || 0;
+  }
+
+  // Fallback to old logic if no tiers configured
+  return (
+    globalSettings.deliveryBaseCharge +
+    (distanceKm - globalSettings.freeDeliveryDistanceLimit) *
+      globalSettings.deliveryChargePerKm
+  );
+};
+
 interface AdminDashboardProps {
   user: UserProfile;
   onBack?: () => void;
@@ -28,6 +73,39 @@ const statBgMap: Record<string, string> = {
   red: "bg-red-50",
   blue: "bg-blue-50",
 };
+
+// ✅ ONE canonical list of permissions (always same order)
+const PERMISSION_KEYS: Array<keyof StaffPermissions> = [
+  "manageMenu",
+  "manageInventory",
+  "viewStats",
+  "manageOrders",
+  "manageOutlets",
+  "manageManagers",
+];
+
+// ✅ Normalize permissions (prevents missing keys from DB)
+const normalizePermissions = (
+  p?: Partial<StaffPermissions> | null
+): StaffPermissions => ({
+  manageMenu: !!p?.manageMenu,
+  manageInventory: !!p?.manageInventory,
+  viewStats: !!p?.viewStats,
+  manageOrders: !!p?.manageOrders,
+  manageOutlets: !!p?.manageOutlets,
+  manageManagers: !!p?.manageManagers,
+});
+
+// ✅ Labels
+const permissionLabel = (k: keyof StaffPermissions) =>
+  ({
+    manageMenu: "Manage Menu",
+    manageInventory: "Manage Inventory",
+    viewStats: "View Stats",
+    manageOrders: "Manage Orders",
+    manageOutlets: "Manage Outlets",
+    manageManagers: "Manage Managers",
+  }[k] || String(k));
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({
   user,
@@ -78,6 +156,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [statsYear, setStatsYear] = useState<number>(2026);
   const [statsMonth, setStatsMonth] = useState<number | "all">("all");
+
+  // history pagination and filter
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyDateFilter, setHistoryDateFilter] = useState<string>("");
+
+  // billing pagination and filters
+  const [billingPage, setBillingPage] = useState(1);
+  const [billingDateFilter, setBillingDateFilter] = useState<string>("");
+  const [billingCategoryFilter, setBillingCategoryFilter] =
+    useState<string>("all");
 
   // modals
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
@@ -135,14 +223,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     password: "",
     role: UserRole.MANAGER,
     outletId: user.outletId || "all",
-    permissions: {
+    permissions: normalizePermissions({
       manageMenu: true,
       manageInventory: true,
       viewStats: true,
       manageOrders: true,
       manageOutlets: false,
       manageManagers: false,
-    } as StaffPermissions,
+    }),
   });
 
   const [outletForm, setOutletForm] = useState({
@@ -157,9 +245,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     radius: 5,
     ownerEmail: "",
     isActive: true,
+    directionsLink: "",
   });
 
   const [categoryName, setCategoryName] = useState("");
+
+  // --------------------------
+  // ✅ IMAGE UPLOAD
+  // --------------------------
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const storageRef = ref(storage, `menu/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      setFormItem((p) => ({ ...p, imageUrl: url }));
+    } catch (error) {
+      console.error("Upload failed:", error);
+      alert("Image upload failed.");
+    }
+  };
 
   // -----------------------
   // ✅ SINGLE SOURCE refresh
@@ -189,7 +295,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       invoicesData,
       settingsData,
     ] = await Promise.all([
-      // if your FirestoreDB.getOrders signature differs, keep only the first param
       canSeeAllOutlets
         ? FirestoreDB.getOrders(undefined, outletToFetch)
         : FirestoreDB.getOrders(undefined, userOutletId),
@@ -218,7 +323,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setManualInvoices(invoicesData || []);
     setGlobalSettings(settingsData || globalSettings);
 
-    // ✅ categories auto from menu + a few defaults
     const fromMenu = Array.from(
       new Set((menuData || []).map((m: any) => m.category).filter(Boolean))
     );
@@ -245,19 +349,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, [selectedOutlet, user.role, user.outletId]);
 
   // ---------------------------------------
-  // ✅ INVENTORY DEDUCTION (no DB change)
+  // ✅ INVENTORY DEDUCTION (client-side)
   // ---------------------------------------
   const deductInventoryForOrder = async (order: Order) => {
-    // Uses: MenuItem.inventoryItems = [{ itemId, qty }] per 1 quantity of that menu item
-    // Deducts: qty * orderItem.quantity
-
     const invMap = new Map<string, InventoryItem>();
     inventory.forEach((i) => invMap.set(i.id, { ...i }));
 
     const menuMap = new Map<string, MenuItem>();
     menu.forEach((m) => menuMap.set(m.id, m));
-
-    const updates: InventoryItem[] = [];
 
     for (const oi of order.items || []) {
       const m = menuMap.get((oi as any).menuItemId);
@@ -269,8 +368,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         const perUnit = Number(link.qty || 0);
         const qty = Number((oi as any).quantity || 0);
-        const deduction = perUnit * qty;
-
+        const variant = (oi as any).variant || "full";
+        const variantMultiplier =
+          variant === "half" ? 0.5 : variant === "qtr" ? 0.25 : 1;
+        const deduction = perUnit * qty * variantMultiplier;
         if (deduction <= 0) continue;
 
         invItem.stock = Math.max(0, Number(invItem.stock) - deduction);
@@ -278,19 +379,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
     }
 
-    invMap.forEach((val) => updates.push(val));
-
-    // Only update inventory for this outlet (optional)
-    const onlyThisOutlet = order.outletId
-      ? updates.filter((i) => i.outletId === order.outletId)
-      : updates;
-
-    // ✅ write back
+    const updates = Array.from(invMap.values());
+    const onlyThisOutlet = updates.filter(
+      (i) => i.outletId === order.outletId || i.outletId === "all"
+    );
     await Promise.all(
       onlyThisOutlet.map((inv) => FirestoreDB.saveInventoryItem(inv))
     );
 
-    // refresh local
     const fresh = await FirestoreDB.getInventory(
       selectedOutlet === "all" ? undefined : selectedOutlet
     );
@@ -302,11 +398,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // --------------------------
   const handleUpdateOrderStatus = async (order: Order, next: OrderStatus) => {
     try {
-      // 1) Update status in Firestore
-      // If your FirestoreDB.updateOrderStatus signature differs, adjust here only.
-      await FirestoreDB.updateOrderStatus(order.id, next, user.name);
+      // NOTE: If your firestoreDb.ts has updateOrderStatus(orderId, status) only,
+      // keep this line as:
+      // await FirestoreDB.updateOrderStatus(order.id, next);
+      await (FirestoreDB as any).updateOrderStatus(order.id, next, user.name);
 
-      // 2) On ACCEPT from PENDING => deduct inventory
       if (
         order.status === OrderStatus.PENDING &&
         next === OrderStatus.ACCEPTED
@@ -314,7 +410,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         await deductInventoryForOrder(order);
       }
 
-      // 3) Refresh orders
       const freshOrders = await FirestoreDB.getOrders(
         undefined,
         selectedOutlet === "all" ? undefined : selectedOutlet
@@ -406,7 +501,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Permission checks
       if (user.role === UserRole.MANAGER) {
         alert("Managers do not have permission to manage users.");
         return;
@@ -429,6 +523,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }
       }
 
+      const safePermissions = normalizePermissions(userForm.permissions);
+
       await FirestoreDB.saveStaffUser({
         id: editingUserId || `staff-${Date.now()}`,
         name: userForm.name,
@@ -438,8 +534,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         password: userForm.password,
         role: userForm.role,
         outletId: userForm.outletId,
-        permissions: userForm.permissions,
-      });
+        permissions: safePermissions,
+      } as any);
 
       setIsUserModalOpen(false);
       const fresh = await FirestoreDB.getStaffUsers();
@@ -472,6 +568,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         isActive: outletForm.isActive,
         rating: 4.5,
         totalRatings: 0,
+        directionsLink: outletForm.directionsLink || undefined,
       };
 
       await FirestoreDB.saveOutlet(outlet);
@@ -524,7 +621,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       "Total",
       "Payment",
     ];
-
     const rows = filteredOrders.map((order) => [
       order.id,
       new Date(order.timestamp).toLocaleDateString(),
@@ -666,7 +762,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onChange={(e) => setSelectedOutlet(e.target.value)}
                   className="appearance-none bg-white border border-gray-100 rounded-[20px] px-8 py-4 text-xs font-black uppercase tracking-widest shadow-xl shadow-black/5 outline-none hover:border-[#C0392B] transition-all cursor-pointer min-w-[220px]"
                 >
-                  <option value="all">All Stations</option>
+                  <option value="all">All Outlets</option>
                   {outlets.map((o) => (
                     <option key={o.id} value={o.id}>
                       {o.name}
@@ -917,6 +1013,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   radius: 5,
                   ownerEmail: "",
                   isActive: true,
+                  directionsLink: "",
                 });
                 setIsOutletModalOpen(true);
               }}
@@ -933,6 +1030,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   radius: o.deliveryRadiusKm,
                   ownerEmail: (o as any).ownerEmail || "",
                   isActive: (o as any).isActive ?? true,
+                  directionsLink: (o as any).directionsLink || "",
                 });
                 setIsOutletModalOpen(true);
               }}
@@ -950,7 +1048,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           )}
 
           {activeTab === "history" && (
-            <HistoryTab selectedOutlet={selectedOutlet} orders={orders} />
+            <HistoryTab
+              selectedOutlet={selectedOutlet}
+              orders={orders}
+              historyPage={historyPage}
+              setHistoryPage={setHistoryPage}
+              historyDateFilter={historyDateFilter}
+              setHistoryDateFilter={setHistoryDateFilter}
+            />
           )}
 
           {activeTab === "users" && (
@@ -967,14 +1072,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   role: UserRole.MANAGER,
                   outletId:
                     user.role === UserRole.OUTLET_OWNER ? user.outletId : "all",
-                  permissions: {
+                  permissions: normalizePermissions({
                     manageMenu: true,
                     manageInventory: true,
                     viewStats: true,
                     manageOrders: true,
                     manageOutlets: false,
                     manageManagers: false,
-                  },
+                  }),
                 } as any);
                 setIsUserModalOpen(true);
               }}
@@ -986,14 +1091,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   password: u.password || "",
                   role: u.role,
                   outletId: u.outletId || "all",
-                  permissions: u.permissions || {
-                    manageMenu: false,
-                    manageInventory: false,
-                    viewStats: false,
-                    manageOrders: true,
-                    manageOutlets: false,
-                    manageManagers: false,
-                  },
+                  permissions: normalizePermissions(u.permissions),
                 });
                 setIsUserModalOpen(true);
               }}
@@ -1036,6 +1134,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               manualInvoices={manualInvoices}
               outlets={outlets}
               globalSettings={globalSettings}
+              billingPage={billingPage}
+              setBillingPage={setBillingPage}
+              billingDateFilter={billingDateFilter}
+              setBillingDateFilter={setBillingDateFilter}
+              billingCategoryFilter={billingCategoryFilter}
+              setBillingCategoryFilter={setBillingCategoryFilter}
               onCreateManualInvoice={() => setIsManualInvoiceModalOpen(true)}
             />
           )}
@@ -1120,6 +1224,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   }
                   className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all"
                 >
+                  <option value="all">All Outlets</option>
                   {outlets.map((o) => (
                     <option key={o.id} value={o.id}>
                       {o.name}
@@ -1174,6 +1279,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onChange={(e) =>
                     setFormItem({ ...formItem, imageUrl: e.target.value })
                   }
+                  className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all mb-4"
+                  placeholder="Enter image URL or upload below"
+                />
+
+                <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                  Or Upload Image
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
                   className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none border border-transparent focus:bg-white focus:border-red-100 transition-all"
                 />
               </div>
@@ -1221,6 +1337,90 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               </div>
 
+              <div className="grid grid-cols-3 gap-4 md:col-span-2">
+                <div>
+                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                    Full Qty
+                  </label>
+                  <input
+                    type="text"
+                    value={formItem.fullQty}
+                    onChange={(e) =>
+                      setFormItem({ ...formItem, fullQty: e.target.value })
+                    }
+                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                    Half Qty
+                  </label>
+                  <input
+                    type="text"
+                    value={formItem.halfQty}
+                    onChange={(e) =>
+                      setFormItem({ ...formItem, halfQty: e.target.value })
+                    }
+                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                    Qtr Qty
+                  </label>
+                  <input
+                    type="text"
+                    value={formItem.qtrQty}
+                    onChange={(e) =>
+                      setFormItem({ ...formItem, qtrQty: e.target.value })
+                    }
+                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 md:col-span-2">
+                <div>
+                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                    Full Serves
+                  </label>
+                  <input
+                    type="text"
+                    value={formItem.fullServes}
+                    onChange={(e) =>
+                      setFormItem({ ...formItem, fullServes: e.target.value })
+                    }
+                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                    Half Serves
+                  </label>
+                  <input
+                    type="text"
+                    value={formItem.halfServes}
+                    onChange={(e) =>
+                      setFormItem({ ...formItem, halfServes: e.target.value })
+                    }
+                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                    Qtr Serves
+                  </label>
+                  <input
+                    type="text"
+                    value={formItem.qtrServes}
+                    onChange={(e) =>
+                      setFormItem({ ...formItem, qtrServes: e.target.value })
+                    }
+                    className="w-full p-5 bg-gray-50 rounded-[24px] font-bold outline-none text-center"
+                  />
+                </div>
+              </div>
+
               <div className="md:col-span-2 pt-4">
                 <label className="flex items-center justify-between p-6 bg-gray-50 rounded-[24px]">
                   <span className="text-xs font-black uppercase tracking-widest text-gray-400">
@@ -1262,21 +1462,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             checked={!!linked}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setFormItem({
-                                  ...formItem,
+                                setFormItem((prev) => ({
+                                  ...prev,
                                   inventoryItems: [
-                                    ...formItem.inventoryItems,
+                                    ...prev.inventoryItems,
                                     { itemId: inv.id, qty: 1 },
                                   ],
-                                });
+                                }));
                               } else {
-                                setFormItem({
-                                  ...formItem,
-                                  inventoryItems:
-                                    formItem.inventoryItems.filter(
-                                      (x) => x.itemId !== inv.id
-                                    ),
-                                });
+                                setFormItem((prev) => ({
+                                  ...prev,
+                                  inventoryItems: prev.inventoryItems.filter(
+                                    (x) => x.itemId !== inv.id
+                                  ),
+                                }));
                               }
                             }}
                             className="w-5 h-5 accent-[#C0392B]"
@@ -1297,15 +1496,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               value={linked.qty}
                               onChange={(e) => {
                                 const val = Number(e.target.value);
-                                setFormItem({
-                                  ...formItem,
-                                  inventoryItems: formItem.inventoryItems.map(
-                                    (x) =>
-                                      x.itemId === inv.id
-                                        ? { ...x, qty: val }
-                                        : x
+                                setFormItem((prev) => ({
+                                  ...prev,
+                                  inventoryItems: prev.inventoryItems.map((x) =>
+                                    x.itemId === inv.id ? { ...x, qty: val } : x
                                   ),
-                                });
+                                }));
                               }}
                               className="w-24 p-3 bg-white rounded-[14px] font-bold text-center"
                               title="How much to minus per 1 order quantity"
@@ -1416,6 +1612,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 label="Image URL"
                 value={outletForm.imageUrl}
                 onChange={(v) => setOutletForm({ ...outletForm, imageUrl: v })}
+              />
+              <Input
+                label="Directions Link"
+                value={outletForm.directionsLink}
+                onChange={(v) =>
+                  setOutletForm({ ...outletForm, directionsLink: v })
+                }
               />
 
               <div className="grid grid-cols-3 gap-4">
@@ -1542,17 +1745,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <Input
                 label="Name"
                 value={userForm.name}
-                onChange={(v) => setUserForm({ ...userForm, name: v })}
+                onChange={(v) => setUserForm((p) => ({ ...p, name: v }))}
               />
               <Input
                 label="Email / Code"
                 value={userForm.email}
-                onChange={(v) => setUserForm({ ...userForm, email: v })}
+                onChange={(v) => setUserForm((p) => ({ ...p, email: v }))}
               />
               <Input
                 label="Password"
                 value={userForm.password}
-                onChange={(v) => setUserForm({ ...userForm, password: v })}
+                onChange={(v) => setUserForm((p) => ({ ...p, password: v }))}
               />
 
               <div className="grid grid-cols-2 gap-4">
@@ -1560,16 +1763,55 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
                     Role
                   </label>
+
+                  {/* ✅ Outlet owner: ONLY Manager + Delivery Boy */}
                   <select
-                    value={userForm.role as any}
+                    value={userForm.role}
                     onChange={(e) =>
-                      setUserForm({ ...userForm, role: e.target.value as any })
+                      setUserForm((p) => ({
+                        ...p,
+                        role: e.target.value as any,
+                      }))
                     }
-                    className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none"
+                    className="w-full p-5 bg-gray-50 rounded-[15px] font-medium outline-none"
                   >
-                    <option value={UserRole.MANAGER}>Manager</option>
-                    <option value={UserRole.OUTLET_OWNER}>Outlet Owner</option>
-                    <option value={UserRole.SUPER_ADMIN}>Super Admin</option>
+                    {user.role === UserRole.OUTLET_OWNER ? (
+                      <>
+                        <option value={UserRole.MANAGER}>Manager</option>
+                        {(UserRole as any).DELIVERY_BOY && (
+                          <option value={(UserRole as any).DELIVERY_BOY}>
+                            Delivery Boy
+                          </option>
+                        )}
+                        {!(UserRole as any).DELIVERY_BOY &&
+                          (UserRole as any).DELIVERY && (
+                            <option value={(UserRole as any).DELIVERY}>
+                              Delivery Boy
+                            </option>
+                          )}
+                      </>
+                    ) : (
+                      <>
+                        <option value={UserRole.MANAGER}>Manager</option>
+                        <option value={UserRole.OUTLET_OWNER}>
+                          Outlet Owner
+                        </option>
+                        <option value={UserRole.SUPER_ADMIN}>
+                          Super Admin
+                        </option>
+                        {(UserRole as any).DELIVERY_BOY && (
+                          <option value={(UserRole as any).DELIVERY_BOY}>
+                            Delivery Boy
+                          </option>
+                        )}
+                        {!(UserRole as any).DELIVERY_BOY &&
+                          (UserRole as any).DELIVERY && (
+                            <option value={(UserRole as any).DELIVERY}>
+                              Delivery Boy
+                            </option>
+                          )}
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -1580,17 +1822,85 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <select
                     value={userForm.outletId}
                     onChange={(e) =>
-                      setUserForm({ ...userForm, outletId: e.target.value })
+                      setUserForm((p) => ({ ...p, outletId: e.target.value }))
                     }
                     className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none"
                   >
-                    <option value="all">Universal</option>
+                    <option value="all">All Outlets</option>
                     {outlets.map((o) => (
                       <option key={o.id} value={o.id}>
                         {o.name}
                       </option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              {/* ✅ WORKING PERMISSIONS */}
+              <div className="pt-8 border-t border-gray-100">
+                <label className="text-[11px] font-black uppercase text-gray-900 mb-6 block tracking-[0.3em] text-center">
+                  Sanctuary Powers & Privileges
+                </label>
+
+                <div className="space-y-4">
+                  {PERMISSION_KEYS.map((key) => {
+                    const isOn = !!userForm.permissions?.[key];
+
+                    return (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-white hover:shadow-md transition-all"
+                      >
+                        <div className="flex-1">
+                          <p className="text-[10px] font-black uppercase text-gray-700 tracking-wider">
+                            {permissionLabel(key)}
+                          </p>
+                        </div>
+
+                        <div className="flex bg-gray-100 p-1 rounded-xl gap-1">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setUserForm((prev) => ({
+                                ...prev,
+                                permissions: {
+                                  ...normalizePermissions(prev.permissions),
+                                  [key]: true,
+                                },
+                              }))
+                            }
+                            className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                              isOn
+                                ? "bg-[#C0392B] text-white shadow-lg"
+                                : "text-gray-400 hover:text-gray-600"
+                            }`}
+                          >
+                            Grant
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setUserForm((prev) => ({
+                                ...prev,
+                                permissions: {
+                                  ...normalizePermissions(prev.permissions),
+                                  [key]: false,
+                                },
+                              }))
+                            }
+                            className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                              !isOn
+                                ? "bg-black text-white shadow-lg"
+                                : "text-gray-400 hover:text-gray-600"
+                            }`}
+                          >
+                            Revoke
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -1624,6 +1934,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             selectedOutlet === "all" ? outlets[0]?.id : selectedOutlet
           }
           gstPercentage={globalSettings.gstPercentage}
+          globalSettings={globalSettings}
           onSave={async (invoice: any) => {
             await FirestoreDB.saveManualInvoice(invoice);
             setIsManualInvoiceModalOpen(false);
@@ -1774,7 +2085,7 @@ const OrderTab: React.FC<{
       {live.map((order) => (
         <div
           key={order.id}
-          className="bg-white p-10 rounded-[50px] border border-gray-100 shadow-sm hover:shadow-2xl transition-all relative overflow-hidden group"
+          className="bg-white p-10 rounded-[50px] border border-gray-100 shadow-sm hover:shadow-2xl transition-all"
         >
           <div className="flex justify-between mb-8">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#C0392B] bg-red-50 px-4 py-1.5 rounded-xl">
@@ -1788,9 +2099,6 @@ const OrderTab: React.FC<{
           <h4 className="text-2xl font-bold text-gray-800 mb-2 truncate">
             {order.customerName}
           </h4>
-          <p className="text-xs text-gray-400 mb-6 font-medium italic line-clamp-1">
-            "{order.address}"
-          </p>
 
           <div className="text-xs text-gray-500 mb-6">
             {order.items?.slice(0, 3).map((i: any, idx: number) => (
@@ -1925,41 +2233,36 @@ const MenuTab: React.FC<any> = ({
         {sorted
           .filter(
             (m: any) =>
-              selectedOutlet === "all" || m.outletId === selectedOutlet
+              selectedOutlet === "all" ||
+              m.outletId === selectedOutlet ||
+              m.outletId === "all"
           )
           .map((item: MenuItem) => (
             <div
               key={item.id}
-              className="bg-white border border-gray-50 rounded-[45px] p-10 group hover:shadow-2xl transition-all relative overflow-hidden"
+              className="bg-white border border-gray-50 rounded-[45px] p-10 hover:shadow-2xl transition-all"
             >
               <div className="aspect-video mb-8 overflow-hidden rounded-[35px] shadow-sm bg-gray-50 relative">
                 <img
                   src={item.imageUrl}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                  alt={item.name}
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://via.placeholder.com/400x300?text=No+Image";
+                  }}
+                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-1000"
                 />
                 <button
                   onClick={() => onDelete(item.id)}
-                  className="absolute top-4 right-4 w-10 h-10 bg-black/60 backdrop-blur-md text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                  className="absolute top-4 right-4 w-10 h-10 bg-black/60 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-red-500"
                   title="Delete"
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
+                  🗑️
                 </button>
               </div>
 
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-2xl font-bold font-playfair text-gray-900 group-hover:text-[#C0392B] transition-colors">
+                <h4 className="text-2xl font-bold font-playfair text-gray-900">
                   {item.name}
                 </h4>
                 <span
@@ -2024,38 +2327,31 @@ const InventoryTab: React.FC<any> = ({
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
       {inventory
         .filter(
-          (i: any) => selectedOutlet === "all" || i.outletId === selectedOutlet
+          (i: any) =>
+            selectedOutlet === "all" ||
+            i.outletId === selectedOutlet ||
+            i.outletId === "all"
         )
         .map((item: InventoryItem) => (
           <div
             key={item.id}
-            className="relative group bg-white rounded-[45px] p-10 border border-gray-100 shadow-sm flex flex-col hover:shadow-2xl transition-all"
+            className="relative bg-white rounded-[45px] p-10 border border-gray-100 shadow-sm hover:shadow-2xl transition-all"
           >
             <button
               onClick={() => onDelete(item.id)}
-              className="absolute top-6 right-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-red-400 opacity-0 group-hover:opacity-100 transition-all shadow hover:bg-red-500 hover:text-white"
+              className="absolute top-6 right-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-red-400 shadow hover:bg-red-500 hover:text-white"
               title="Delete"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
+              🗑️
             </button>
 
-            <h4 className="text-2xl font-playfair font-bold text-gray-800 mb-2 group-hover:text-[#C0392B] transition-colors">
+            <h4 className="text-2xl font-playfair font-bold text-gray-800 mb-2">
               {item.name}
             </h4>
             <p className="text-[8px] font-black uppercase text-gray-300 tracking-widest mb-8">
-              {outlets.find((o: any) => o.id === item.outletId)?.name || ""}
+              {item.outletId === "all"
+                ? "All Outlets"
+                : outlets.find((o: any) => o.id === item.outletId)?.name || ""}
             </p>
 
             <div className="flex items-center justify-between mb-8">
@@ -2069,28 +2365,6 @@ const InventoryTab: React.FC<any> = ({
                 Edit
               </button>
             </div>
-
-            <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden mt-auto">
-              <div
-                className={`h-full ${
-                  item.stock < item.minStock
-                    ? "bg-gradient-to-r from-red-500 to-red-400 animate-pulse"
-                    : "bg-gradient-to-r from-emerald-600 to-emerald-400"
-                }`}
-                style={{
-                  width: `${Math.min(
-                    (item.stock / (item.minStock * 2.5 || 100)) * 100,
-                    100
-                  )}%`,
-                }}
-              />
-            </div>
-
-            {item.stock < item.minStock && (
-              <p className="text-[8px] font-black text-red-500 uppercase tracking-widest mt-4 text-center">
-                ⚠️ Low Stock
-              </p>
-            )}
           </div>
         ))}
     </div>
@@ -2126,12 +2400,12 @@ const OutletTab: React.FC<any> = ({
       {outlets.map((o: Outlet) => (
         <div
           key={o.id}
-          className="bg-white border border-gray-100 rounded-[45px] p-8 group hover:shadow-2xl transition-all"
+          className="bg-white border border-gray-100 rounded-[45px] p-8 hover:shadow-2xl transition-all"
         >
           <div className="aspect-video mb-6 overflow-hidden rounded-[35px] shadow-sm bg-gray-50 relative">
             <img
               src={o.imageUrl}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+              className="w-full h-full object-cover hover:scale-110 transition-transform duration-1000"
             />
             <div className="absolute top-4 left-4">
               <span
@@ -2146,31 +2420,12 @@ const OutletTab: React.FC<any> = ({
             </div>
           </div>
 
-          <h4 className="text-2xl font-bold font-playfair text-gray-900 mb-2 group-hover:text-[#C0392B] transition-colors">
+          <h4 className="text-2xl font-bold font-playfair text-gray-900 mb-2">
             {o.name}
           </h4>
           <p className="text-[10px] font-black uppercase text-gray-300 tracking-widest mb-6 truncate">
             {o.address}
           </p>
-
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center text-[#C0392B]">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2.5"
-                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                />
-              </svg>
-            </div>
-            <span className="text-xs font-bold text-gray-600">{o.contact}</span>
-          </div>
 
           <div className="flex gap-4 pt-6 border-t border-gray-50">
             <button
@@ -2186,19 +2441,7 @@ const OutletTab: React.FC<any> = ({
                 className="px-5 py-3 text-red-400 hover:text-red-600 transition-colors"
                 title="Delete"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
+                🗑️
               </button>
             )}
           </div>
@@ -2208,210 +2451,715 @@ const OutletTab: React.FC<any> = ({
   </div>
 );
 
-const HistoryTab: React.FC<any> = ({ selectedOutlet, orders }) => (
-  <div className="bg-white rounded-[40px] p-10 md:p-14 border border-gray-100 shadow-sm">
-    <h3 className="text-4xl font-playfair font-bold text-gray-800 mb-12">
-      Order History
-    </h3>
-    <div className="space-y-6">
-      {orders
-        .filter(
-          (o: any) =>
-            o.status === OrderStatus.DELIVERED ||
-            o.status === OrderStatus.REJECTED
-        )
-        .filter(
-          (o: any) => selectedOutlet === "all" || o.outletId === selectedOutlet
-        )
-        .sort((a: any, b: any) => Number(b.timestamp) - Number(a.timestamp))
-        .map((order: any) => (
+const HistoryTab: React.FC<{
+  selectedOutlet: string;
+  orders: Order[];
+  historyPage: number;
+  setHistoryPage: (page: number) => void;
+  historyDateFilter: string;
+  setHistoryDateFilter: (date: string) => void;
+}> = ({
+  selectedOutlet,
+  orders,
+  historyPage,
+  setHistoryPage,
+  historyDateFilter,
+  setHistoryDateFilter,
+}) => {
+  const filteredOrders = orders
+    .filter(
+      (o: any) =>
+        o.status === OrderStatus.DELIVERED || o.status === OrderStatus.REJECTED
+    )
+    .filter(
+      (o: any) => selectedOutlet === "all" || o.outletId === selectedOutlet
+    )
+    .filter((o: any) => {
+      if (!historyDateFilter) return true;
+      const orderDate = new Date(o.timestamp).toDateString();
+      const filterDate = new Date(historyDateFilter).toDateString();
+      return orderDate === filterDate;
+    })
+    .sort((a: any, b: any) => Number(b.timestamp) - Number(a.timestamp));
+
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const startIndex = (historyPage - 1) * itemsPerPage;
+  const paginatedOrders = filteredOrders.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  // Reset page when filter changes
+  React.useEffect(() => {
+    setHistoryPage(1);
+  }, [historyDateFilter, setHistoryPage]);
+
+  return (
+    <div className="bg-white rounded-[40px] p-10 md:p-14 border border-gray-100 shadow-sm">
+      <div className="flex justify-between items-center mb-12">
+        <h3 className="text-4xl font-playfair font-bold text-gray-800">
+          Order History
+        </h3>
+        <div className="flex gap-4 items-center">
+          <input
+            type="date"
+            value={historyDateFilter}
+            onChange={(e) => setHistoryDateFilter(e.target.value)}
+            className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-sm font-bold shadow-sm outline-none"
+          />
+          {historyDateFilter && (
+            <button
+              onClick={() => setHistoryDateFilter("")}
+              className="bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-600"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="space-y-6">
+        {paginatedOrders.map((order: any) => (
           <div
             key={order.id}
-            className="bg-gray-50 p-8 rounded-[40px] flex flex-col md:flex-row justify-between items-center gap-6 hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-red-50"
+            className="bg-gray-50 p-8 rounded-[40px] flex justify-between items-center"
           >
-            <div className="flex-1">
-              <div className="flex items-center gap-4 mb-2">
-                <span
-                  className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest ${
-                    order.status === OrderStatus.DELIVERED
-                      ? "bg-emerald-50 text-emerald-600"
-                      : "bg-red-50 text-red-600"
-                  }`}
-                >
-                  {order.status}
-                </span>
-                <span className="text-[11px] font-mono text-gray-400 font-bold">
-                  #{order.id}
-                </span>
-              </div>
-              <h4 className="text-2xl font-bold text-gray-800">
+            <div>
+              <h4 className="text-xl font-bold text-gray-900">
                 {order.customerName}
               </h4>
+              <p className="text-[10px] font-mono text-gray-400 font-bold">
+                #{order.id}
+              </p>
             </div>
-
             <div className="text-right">
-              <p className="text-3xl font-playfair font-black text-gray-900 tabular-nums">
+              <p className="text-2xl font-black text-gray-900 tabular-nums">
                 ₹{Number(order.total).toFixed(0)}
               </p>
-              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest mt-1">
+              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
                 {order.paymentMethod} •{" "}
                 {new Date(order.timestamp).toLocaleDateString()}
               </p>
             </div>
           </div>
         ))}
+      </div>
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-8">
+          <button
+            onClick={() => setHistoryPage(Math.max(1, historyPage - 1))}
+            disabled={historyPage === 1}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-gray-600">
+            Page {historyPage} of {totalPages}
+          </span>
+          <button
+            onClick={() =>
+              setHistoryPage(Math.min(totalPages, historyPage + 1))
+            }
+            disabled={historyPage === totalPages}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
-const BillingTab: React.FC<any> = ({
+const BillingTab: React.FC<{
+  selectedOutlet: string;
+  orders: Order[];
+  manualInvoices: ManualInvoice[];
+  outlets: Outlet[];
+  globalSettings: GlobalSettings;
+  billingPage: number;
+  setBillingPage: (page: number) => void;
+  billingDateFilter: string;
+  setBillingDateFilter: (date: string) => void;
+  billingCategoryFilter: string;
+  setBillingCategoryFilter: (filter: string) => void;
+  onCreateManualInvoice: () => void;
+}> = ({
   selectedOutlet,
   orders,
   manualInvoices,
   outlets,
   globalSettings,
+  billingPage,
+  setBillingPage,
+  billingDateFilter,
+  setBillingDateFilter,
+  billingCategoryFilter,
+  setBillingCategoryFilter,
   onCreateManualInvoice,
-}) => (
-  <div className="bg-white rounded-[40px] p-10 md:p-14 border border-gray-100 shadow-sm">
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
-      <div>
-        <h3 className="text-4xl font-playfair font-bold text-gray-900">
-          Billing
-        </h3>
-        <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
-          Invoices & Sales
-        </p>
-      </div>
-      <button
-        onClick={onCreateManualInvoice}
-        className="bg-[#C0392B] text-white px-10 py-4 rounded-2xl font-black uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all"
-      >
-        + Manual Invoice
-      </button>
-    </div>
+}) => {
+  const allInvoices = [
+    ...orders.map((o: any) => ({ ...o, type: "AUTO" })),
+    ...manualInvoices.map((i: any) => ({ ...i, type: "MANUAL" })),
+  ];
 
-    <div className="space-y-4">
-      {[
-        ...orders.map((o: any) => ({ ...o, type: "AUTO" })),
-        ...manualInvoices.map((i: any) => ({ ...i, type: "MANUAL" })),
-      ]
-        .filter(
-          (i) => selectedOutlet === "all" || i.outletId === selectedOutlet
-        )
-        .sort((a, b) => Number(b.timestamp) - Number(a.timestamp))
-        .map((inv) => (
+  const filteredInvoices = allInvoices
+    .filter((i) => selectedOutlet === "all" || i.outletId === selectedOutlet)
+    .filter((i) => {
+      if (!billingDateFilter) return true;
+      const invoiceDate = new Date(i.timestamp).toDateString();
+      const filterDate = new Date(billingDateFilter).toDateString();
+      return invoiceDate === filterDate;
+    })
+    .filter((i) => {
+      if (billingCategoryFilter === "all") return true;
+      return i.type === billingCategoryFilter;
+    })
+    .sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
+
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+  const startIndex = (billingPage - 1) * itemsPerPage;
+  const paginatedInvoices = filteredInvoices.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setBillingPage(1);
+  }, [
+    billingDateFilter,
+    billingCategoryFilter,
+    selectedOutlet,
+    setBillingPage,
+  ]);
+
+  const handlePrintInvoice = (inv: any) => {
+    const outlet = outlets.find((o: any) => o.id === inv.outletId);
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Invoice ${inv.id}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              .header { text-align: center; margin-bottom: 30px; }
+              .details { margin-bottom: 20px; }
+              .items { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+              .items th, .items td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              .total { text-align: right; font-weight: bold; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>Havens Kitchen Invoice</h1>
+              <p>Invoice ID: ${inv.id}</p>
+            </div>
+            <div class="details">
+              <p><strong>Customer:</strong> ${inv.customerName}</p>
+              <p><strong>Outlet:</strong> ${outlet?.name || "N/A"}</p>
+              <p><strong>Date:</strong> ${new Date(
+                inv.timestamp
+              ).toLocaleString()}</p>
+              <p><strong>Payment Method:</strong> ${inv.paymentMethod}</p>
+            </div>
+            <table class="items">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Quantity</th>
+                  <th>Price</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${
+                  inv.items
+                    ?.map(
+                      (item: any) => `
+                  <tr>
+                    <td>${item.name}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.price}</td>
+                    <td>₹${(item.price * item.quantity).toFixed(2)}</td>
+                  </tr>
+                `
+                    )
+                    .join("") || ""
+                }
+              </tbody>
+            </table>
+            <div class="total">
+              <p>Subtotal: ₹${inv.subtotal?.toFixed(2) || inv.total}</p>
+              <p>Tax: ₹${inv.tax?.toFixed(2) || 0}</p>
+              <p>Delivery: ₹${inv.deliveryCharge?.toFixed(2) || 0}</p>
+              <p>Total: ₹${inv.total}</p>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const handleDownloadInvoice = (inv: any) => {
+    const outlet = outlets.find((o: any) => o.id === inv.outletId);
+    const invoiceHTML = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Invoice ${inv.id} - Havens Kitchen</title>
+          <style>
+            body { font-family: 'Times New Roman', serif; margin: 0; padding: 20px; background: white; }
+            .invoice-header { text-align: center; border-bottom: 2px solid #C0392B; padding-bottom: 20px; margin-bottom: 30px; }
+            .invoice-header h1 { color: #C0392B; margin: 0; font-size: 28px; }
+            .invoice-header p { margin: 5px 0; font-size: 14px; }
+            .invoice-details { display: flex; justify-content: space-between; margin-bottom: 30px; }
+            .detail-section { flex: 1; }
+            .detail-section h3 { margin-top: 0; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+            .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            .items-table th, .items-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+            .items-table th { background-color: #f5f5f5; font-weight: bold; }
+            .items-table .text-right { text-align: right; }
+            .totals { text-align: right; margin-top: 20px; }
+            .totals p { margin: 5px 0; font-size: 16px; }
+            .totals .grand-total { font-size: 20px; font-weight: bold; color: #C0392B; }
+            .footer { text-align: center; margin-top: 40px; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-header">
+            <h1>Havens Kitchen</h1>
+            <p>Established 1984 • Culinary Sanctuary</p>
+            <p>Invoice #${inv.id}</p>
+          </div>
+          
+          <div class="invoice-details">
+            <div class="detail-section">
+              <h3>Bill To:</h3>
+              <p><strong>${inv.customerName}</strong></p>
+              <p>${inv.customerPhone || ""}</p>
+              <p>${inv.address || ""}</p>
+            </div>
+            <div class="detail-section">
+              <h3>Invoice Details:</h3>
+              <p><strong>Date:</strong> ${new Date(
+                inv.timestamp
+              ).toLocaleDateString()}</p>
+              <p><strong>Time:</strong> ${new Date(
+                inv.timestamp
+              ).toLocaleTimeString()}</p>
+              <p><strong>Outlet:</strong> ${outlet?.name || "N/A"}</p>
+              <p><strong>Payment:</strong> ${inv.paymentMethod}</p>
+            </div>
+          </div>
+          
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Rate</th>
+                <th class="text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${
+                inv.items
+                  ?.map(
+                    (item: any) => `
+                <tr>
+                  <td>${item.name}${
+                      item.variant ? ` (${item.variant})` : ""
+                    }</td>
+                  <td>${item.quantity}</td>
+                  <td>₹${item.price.toFixed(2)}</td>
+                  <td class="text-right">₹${(
+                    item.price * item.quantity
+                  ).toFixed(2)}</td>
+                </tr>
+              `
+                  )
+                  .join("") || ""
+              }
+            </tbody>
+          </table>
+          
+          <div class="totals">
+            <p>Subtotal: ₹${
+              inv.subtotal?.toFixed(2) ||
+              (inv.total - (inv.tax || 0) - (inv.deliveryCharge || 0)).toFixed(
+                2
+              )
+            }</p>
+            ${
+              inv.tax
+                ? `<p>Tax (${
+                    globalSettings.gstPercentage
+                  }%): ₹${inv.tax.toFixed(2)}</p>`
+                : ""
+            }
+            ${
+              inv.deliveryCharge
+                ? `<p>Delivery Charge: ₹${inv.deliveryCharge.toFixed(2)}</p>`
+                : ""
+            }
+            <p class="grand-total">Total: ₹${inv.total.toFixed(2)}</p>
+          </div>
+          
+          <div class="footer">
+            <p>Thank you for dining with us!</p>
+            <p>HQ - South Delhi, India | Contact: 9899466466</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    // Create a temporary element to hold the HTML
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = invoiceHTML;
+    tempDiv.style.position = "absolute";
+    tempDiv.style.left = "-9999px";
+    document.body.appendChild(tempDiv);
+
+    // Configure html2pdf options
+    const options = {
+      margin: 0.5,
+      filename: `invoice_${inv.id}.pdf`,
+      image: { type: "jpeg" as const, quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: {
+        unit: "in" as const,
+        format: "a4" as const,
+        orientation: "portrait" as const,
+      },
+    };
+
+    // Generate and download PDF
+    html2pdf()
+      .set(options)
+      .from(tempDiv)
+      .save()
+      .then(() => {
+        // Clean up
+        document.body.removeChild(tempDiv);
+      });
+  };
+
+  return (
+    <div className="bg-white rounded-[40px] p-10 md:p-14 border border-gray-100 shadow-sm">
+      <div className="flex justify-between items-start mb-12 gap-6">
+        <div>
+          <h3 className="text-4xl font-playfair font-bold text-gray-900">
+            Billing
+          </h3>
+          <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+            Invoices & Sales
+          </p>
+        </div>
+        <div className="flex gap-4 items-center">
+          <select
+            value={billingCategoryFilter}
+            onChange={(e) => setBillingCategoryFilter(e.target.value)}
+            className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-sm font-bold shadow-sm outline-none"
+          >
+            <option value="all">All Orders</option>
+            <option value="AUTO">Online Orders</option>
+            <option value="MANUAL">Manual Orders</option>
+          </select>
+          <input
+            type="date"
+            value={billingDateFilter}
+            onChange={(e) => setBillingDateFilter(e.target.value)}
+            className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-sm font-bold shadow-sm outline-none"
+          />
+          {billingDateFilter && (
+            <button
+              onClick={() => setBillingDateFilter("")}
+              className="bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-600"
+            >
+              Clear
+            </button>
+          )}
+          <button
+            onClick={onCreateManualInvoice}
+            className="bg-[#C0392B] text-white px-10 py-4 rounded-2xl font-black uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all"
+          >
+            + Manual Invoice
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {paginatedInvoices.map((inv) => (
           <div
             key={inv.id}
-            className="flex flex-col sm:flex-row justify-between items-center p-8 bg-gray-50 rounded-[35px] hover:bg-white hover:shadow-xl transition-all"
+            className="flex justify-between items-center p-8 bg-gray-50 rounded-[35px]"
           >
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span
-                  className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
-                    inv.type === "AUTO"
-                      ? "bg-blue-50 text-blue-600"
-                      : "bg-[#C0392B] text-white"
-                  }`}
-                >
-                  {inv.type}
-                </span>
-                <p className="text-[10px] font-mono text-gray-400">
-                  ID: {inv.id}
-                </p>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-xl font-bold text-gray-800">
+                  {inv.customerName}
+                </h4>
+                {inv.type === "AUTO" && (
+                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold uppercase">
+                    Online
+                  </span>
+                )}
+                {inv.type === "MANUAL" && (
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold uppercase">
+                    Manual
+                  </span>
+                )}
               </div>
-              <h4 className="text-xl font-bold text-gray-800">
-                {inv.customerName}
-              </h4>
-              <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
                 {new Date(inv.timestamp).toLocaleString()} •{" "}
                 {outlets.find((o: any) => o.id === inv.outletId)?.name}
               </p>
             </div>
-
-            <div className="text-right">
-              <p className="text-2xl font-black text-gray-900 tabular-nums mb-1">
-                ₹{Number(inv.total).toFixed(0)}
-              </p>
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                {inv.paymentMethod}
-              </p>
+            <div className="text-right flex items-center gap-4">
+              <div>
+                <p className="text-2xl font-black text-gray-900 tabular-nums">
+                  ₹{Number(inv.total).toFixed(0)}
+                </p>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                  {inv.paymentMethod}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleDownloadInvoice(inv)}
+                  className="px-3 py-2 bg-green-500 text-white rounded-lg text-xs font-bold hover:bg-green-600"
+                >
+                  Download
+                </button>
+                <button
+                  onClick={() => handlePrintInvoice(inv)}
+                  className="px-3 py-2 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600"
+                >
+                  Print
+                </button>
+              </div>
             </div>
           </div>
         ))}
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-8">
+          <button
+            onClick={() => setBillingPage(Math.max(1, billingPage - 1))}
+            disabled={billingPage === 1}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-gray-600">
+            Page {billingPage} of {totalPages}
+          </span>
+          <button
+            onClick={() =>
+              setBillingPage(Math.min(totalPages, billingPage + 1))
+            }
+            disabled={billingPage === totalPages}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 const SettingsTab: React.FC<any> = ({
   globalSettings,
   setGlobalSettings,
   onSave,
-}) => (
-  <div className="bg-white rounded-[50px] p-12 border border-gray-100 shadow-sm max-w-2xl mx-auto">
-    <h3 className="text-3xl font-playfair font-bold mb-8">Settings</h3>
+}) => {
+  const addDeliveryTier = () => {
+    const newTier = {
+      id: Date.now().toString(),
+      upToKm: 5,
+      charge: 40,
+    };
+    setGlobalSettings({
+      ...globalSettings,
+      deliveryTiers: [...globalSettings.deliveryTiers, newTier],
+    });
+  };
 
-    <form onSubmit={onSave} className="space-y-8">
-      <div>
-        <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
-          GST (%)
-        </label>
-        <input
-          type="number"
-          value={globalSettings.gstPercentage}
-          onChange={(e) =>
-            setGlobalSettings({
-              ...globalSettings,
-              gstPercentage: Number(e.target.value),
-            })
-          }
-          className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none text-xl text-center"
-        />
-      </div>
+  const updateDeliveryTier = (id: string, field: string, value: number) => {
+    setGlobalSettings({
+      ...globalSettings,
+      deliveryTiers: globalSettings.deliveryTiers.map((tier) =>
+        tier.id === id ? { ...tier, [field]: value } : tier
+      ),
+    });
+  };
 
-      <div className="grid grid-cols-2 gap-8">
+  const removeDeliveryTier = (id: string) => {
+    setGlobalSettings({
+      ...globalSettings,
+      deliveryTiers: globalSettings.deliveryTiers.filter(
+        (tier) => tier.id !== id
+      ),
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-[50px] p-12 border border-gray-100 shadow-sm max-w-4xl mx-auto">
+      <h3 className="text-3xl font-playfair font-bold mb-8">Settings</h3>
+
+      <form onSubmit={onSave} className="space-y-8">
         <div>
           <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
-            Base Delivery
+            GST (%)
           </label>
           <input
             type="number"
-            value={globalSettings.deliveryBaseCharge}
+            value={globalSettings.gstPercentage}
             onChange={(e) =>
               setGlobalSettings({
                 ...globalSettings,
-                deliveryBaseCharge: Number(e.target.value),
+                gstPercentage: Number(e.target.value),
               })
             }
             className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none text-xl text-center"
           />
         </div>
-        <div>
-          <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
-            Charge / Km
-          </label>
-          <input
-            type="number"
-            value={globalSettings.deliveryChargePerKm}
-            onChange={(e) =>
-              setGlobalSettings({
-                ...globalSettings,
-                deliveryChargePerKm: Number(e.target.value),
-              })
-            }
-            className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none text-xl text-center"
-          />
-        </div>
-      </div>
 
-      <button
-        type="submit"
-        className="w-full py-6 bg-gray-900 text-white rounded-[32px] font-black uppercase text-xs shadow-2xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest"
-      >
-        Save
-      </button>
-    </form>
-  </div>
-);
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+              Free Delivery Threshold (₹)
+            </label>
+            <input
+              type="number"
+              value={globalSettings.freeDeliveryThreshold}
+              onChange={(e) =>
+                setGlobalSettings({
+                  ...globalSettings,
+                  freeDeliveryThreshold: Number(e.target.value),
+                })
+              }
+              className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none text-xl text-center"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+              Free Delivery Distance Limit (km)
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              value={globalSettings.freeDeliveryDistanceLimit}
+              onChange={(e) =>
+                setGlobalSettings({
+                  ...globalSettings,
+                  freeDeliveryDistanceLimit: Number(e.target.value),
+                })
+              }
+              className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none text-xl text-center"
+            />
+          </div>
+        </div>
+
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+              Delivery Tiers (Distance-based Charges)
+            </label>
+            <button
+              type="button"
+              onClick={addDeliveryTier}
+              className="bg-[#C0392B] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-600"
+            >
+              + Add Tier
+            </button>
+          </div>
+          <div className="space-y-3">
+            {globalSettings.deliveryTiers
+              .sort((a, b) => a.upToKm - b.upToKm)
+              .map((tier, index) => (
+                <div
+                  key={tier.id}
+                  className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl"
+                >
+                  <div className="flex-1">
+                    <label className="text-[9px] font-black uppercase text-gray-500 mb-1 block tracking-widest">
+                      Up to {index === 0 ? "" : "Next"} {tier.upToKm} km
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[8px] font-bold uppercase text-gray-400 mb-1 block">
+                          Distance (km)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={tier.upToKm}
+                          onChange={(e) =>
+                            updateDeliveryTier(
+                              tier.id,
+                              "upToKm",
+                              Number(e.target.value)
+                            )
+                          }
+                          className="w-full p-3 bg-white rounded-xl font-bold text-center text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[8px] font-bold uppercase text-gray-400 mb-1 block">
+                          Charge (₹)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={tier.charge}
+                          onChange={(e) =>
+                            updateDeliveryTier(
+                              tier.id,
+                              "charge",
+                              Number(e.target.value)
+                            )
+                          }
+                          className="w-full p-3 bg-white rounded-xl font-bold text-center text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeDeliveryTier(tier.id)}
+                    className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 text-sm"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+          </div>
+          {globalSettings.deliveryTiers.length === 0 && (
+            <p className="text-sm text-gray-500 text-center py-8">
+              No delivery tiers configured. Add tiers to set distance-based
+              delivery charges.
+            </p>
+          )}
+        </div>
+
+        <button
+          type="submit"
+          className="w-full py-6 bg-gray-900 text-white rounded-[32px] font-black uppercase text-xs shadow-2xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest"
+        >
+          Save
+        </button>
+      </form>
+    </div>
+  );
+};
 
 const UsersTab: React.FC<any> = ({
   user,
@@ -2422,7 +3170,7 @@ const UsersTab: React.FC<any> = ({
   onDelete,
 }) => (
   <div className="bg-white rounded-[40px] p-10 md:p-14 border border-gray-100 shadow-sm">
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+    <div className="flex justify-between items-start mb-12 gap-6">
       <h3 className="text-4xl font-playfair font-bold text-gray-800">Staff</h3>
 
       <button
@@ -2492,6 +3240,7 @@ const UsersTab: React.FC<any> = ({
               </td>
             </tr>
           ))}
+
           {staffUsers.length === 0 && (
             <tr>
               <td
@@ -2515,6 +3264,7 @@ const ManualInvoiceModal: React.FC<any> = ({
   menu,
   selectedOutletId,
   gstPercentage,
+  globalSettings,
   onSave,
 }) => {
   const [formData, setFormData] = useState({
@@ -2522,6 +3272,8 @@ const ManualInvoiceModal: React.FC<any> = ({
     outletId: selectedOutletId,
     paymentMethod: "CASH" as any,
   });
+
+  const [distanceKm, setDistanceKm] = useState<number>(0);
 
   useEffect(() => {
     setFormData((p) => ({ ...p, outletId: selectedOutletId }));
@@ -2535,7 +3287,12 @@ const ManualInvoiceModal: React.FC<any> = ({
     0
   );
   const tax = subtotal * (gstPercentage / 100);
-  const total = subtotal + tax;
+  const deliveryCharge = calculateDeliveryCharge(
+    distanceKm,
+    subtotal,
+    globalSettings
+  );
+  const total = subtotal + tax + deliveryCharge;
 
   const addItem = (
     item: MenuItem,
@@ -2578,23 +3335,33 @@ const ManualInvoiceModal: React.FC<any> = ({
     <ModalShell onClose={onClose}>
       <div className="relative w-full max-w-7xl bg-white rounded-[60px] shadow-2xl p-10 md:p-14 flex flex-col md:flex-row gap-12 max-h-[90vh] overflow-hidden border border-gray-100">
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10 gap-6">
+          <div className="mb-8">
+            <h3 className="text-4xl font-playfair font-bold text-gray-900">
+              Manual Invoice
+            </h3>
+          </div>
+
+          <div className="bg-gray-50 p-8 rounded-[40px] mb-8 border border-gray-100 flex flex-col gap-6">
             <div>
-              <h3 className="text-4xl font-playfair font-bold text-gray-900 leading-none">
-                Manual Invoice
-              </h3>
-              <p className="text-[10px] font-black uppercase text-[#C0392B] tracking-[0.3em] mt-3">
-                Create invoice
-              </p>
+              <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                Customer
+              </label>
+              <input
+                value={formData.customerName}
+                onChange={(e) =>
+                  setFormData({ ...formData, customerName: e.target.value })
+                }
+                className="w-full p-5 bg-white rounded-2xl font-bold outline-none"
+              />
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <select
                 value={formData.outletId}
                 onChange={(e) =>
                   setFormData({ ...formData, outletId: e.target.value })
                 }
-                className="bg-gray-50 text-[9px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl outline-none border border-gray-100"
+                className="bg-white border border-gray-100 rounded-2xl px-5 py-3 text-xs font-bold"
               >
                 {outlets.map((o: any) => (
                   <option key={o.id} value={o.id}>
@@ -2611,7 +3378,7 @@ const ManualInvoiceModal: React.FC<any> = ({
                     paymentMethod: e.target.value as any,
                   })
                 }
-                className="bg-gray-50 text-[9px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl outline-none border border-gray-100"
+                className="bg-white border border-gray-100 rounded-2xl px-5 py-3 text-xs font-bold"
               >
                 <option value="CASH">CASH</option>
                 <option value="UPI">UPI</option>
@@ -2619,60 +3386,55 @@ const ManualInvoiceModal: React.FC<any> = ({
                 <option value="COD">COD</option>
               </select>
             </div>
-          </div>
 
-          <div className="bg-gray-50 p-8 rounded-[40px] mb-8 border border-gray-100 flex flex-col gap-6">
             <div>
               <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
-                Customer
+                Distance (km)
               </label>
               <input
-                value={formData.customerName}
-                onChange={(e) =>
-                  setFormData({ ...formData, customerName: e.target.value })
-                }
-                className="w-full p-5 bg-white rounded-2xl font-bold outline-none border border-transparent focus:border-red-100"
+                type="number"
+                step="0.1"
+                min="0"
+                value={distanceKm}
+                onChange={(e) => setDistanceKm(Number(e.target.value) || 0)}
+                className="w-full p-5 bg-white rounded-2xl font-bold outline-none"
+                placeholder="Enter delivery distance"
               />
             </div>
 
-            <div>
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search menu..."
-                className="w-full p-5 bg-white rounded-2xl font-bold outline-none border border-transparent"
-              />
-            </div>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search menu..."
+              className="w-full p-5 bg-white rounded-2xl font-bold outline-none"
+            />
           </div>
 
-          <div className="flex-grow overflow-y-auto pr-6 space-y-5 no-scrollbar pb-10">
+          <div className="flex-grow overflow-y-auto pr-2 space-y-4 no-scrollbar">
             {menu
+              .filter((m: any) => m.outletId === formData.outletId)
               .filter((m: any) =>
                 m.name.toLowerCase().includes(search.toLowerCase())
               )
-              .filter((m: any) => m.outletId === formData.outletId)
               .map((m: any) => (
                 <div
                   key={m.id}
-                  className="p-6 bg-white border border-gray-100 rounded-[35px] flex flex-col lg:flex-row justify-between items-center gap-8 hover:border-[#C0392B] transition-all"
+                  className="p-5 bg-white border border-gray-100 rounded-[25px] flex justify-between items-center"
                 >
-                  <div className="flex-1">
-                    <h5 className="font-bold text-gray-800 text-lg">
-                      {m.name}
-                    </h5>
-                    <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest">
+                  <div>
+                    <p className="font-bold">{m.name}</p>
+                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
                       {m.category}
                     </p>
                   </div>
-
-                  <div className="flex gap-4">
+                  <div className="flex gap-2">
                     {(["full", "half", "qtr"] as const).map(
                       (v) =>
                         m.price[v] && (
                           <button
                             key={v}
                             onClick={() => addItem(m, v)}
-                            className="px-6 py-2.5 bg-gray-900 text-white text-[9px] font-black uppercase rounded-xl hover:bg-[#C0392B] transition-all tracking-widest shadow-lg"
+                            className="px-4 py-2 bg-gray-900 text-white text-[9px] font-black uppercase rounded-xl hover:bg-[#C0392B]"
                           >
                             ADD {v.toUpperCase()}
                           </button>
@@ -2684,18 +3446,16 @@ const ManualInvoiceModal: React.FC<any> = ({
           </div>
         </div>
 
-        <div className="w-full md:w-[420px] bg-gray-50 rounded-[50px] p-12 flex flex-col shadow-inner border border-gray-100">
-          <div className="flex-grow overflow-y-auto space-y-6 no-scrollbar mb-10 pr-2">
+        <div className="w-full md:w-[420px] bg-gray-50 rounded-[50px] p-10 flex flex-col border border-gray-100">
+          <div className="flex-grow overflow-y-auto space-y-4 no-scrollbar mb-8 pr-2">
             {selectedItems.map((item: any) => (
               <div
                 key={`${item.menuItemId}-${item.variant}`}
-                className="bg-white p-6 rounded-[32px] border border-gray-100 flex justify-between items-center"
+                className="bg-white p-5 rounded-[22px] border border-gray-100 flex justify-between items-center"
               >
-                <div className="flex-1">
-                  <p className="text-sm font-black text-gray-800">
-                    {item.name}
-                  </p>
-                  <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest mt-1">
+                <div>
+                  <p className="font-black text-sm">{item.name}</p>
+                  <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest">
                     {item.variant.toUpperCase()} • ₹{item.price} ×{" "}
                     {item.quantity}
                   </p>
@@ -2710,7 +3470,7 @@ const ManualInvoiceModal: React.FC<any> = ({
             ))}
           </div>
 
-          <div className="space-y-4 border-t border-dashed border-gray-200 pt-8">
+          <div className="space-y-3 border-t border-dashed border-gray-200 pt-6">
             <div className="flex justify-between text-[11px] font-black uppercase text-gray-400 tracking-widest">
               <span>SUBTOTAL</span>
               <span>₹{subtotal.toFixed(0)}</span>
@@ -2719,7 +3479,11 @@ const ManualInvoiceModal: React.FC<any> = ({
               <span>GST ({gstPercentage}%)</span>
               <span>₹{tax.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-3xl font-playfair font-black pt-4 border-t border-gray-100 text-gray-900">
+            <div className="flex justify-between text-[11px] font-black uppercase text-gray-400 tracking-widest">
+              <span>DELIVERY ({distanceKm}km)</span>
+              <span>₹{deliveryCharge.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-3xl font-playfair font-black pt-3 border-t border-gray-100 text-gray-900">
               <span>TOTAL</span>
               <span className="text-[#C0392B]">₹{total.toFixed(0)}</span>
             </div>
@@ -2736,12 +3500,12 @@ const ManualInvoiceModal: React.FC<any> = ({
                 items: selectedItems,
                 subtotal,
                 tax,
-                deliveryCharge: 0,
+                deliveryCharge,
                 total,
                 timestamp: Date.now(),
               })
             }
-            className="w-full py-6 bg-gray-900 text-white rounded-[32px] font-black uppercase text-[11px] tracking-[0.3em] mt-10 hover:bg-[#C0392B] transition-all shadow-2xl disabled:opacity-30"
+            className="w-full py-5 bg-gray-900 text-white rounded-[24px] font-black uppercase text-[11px] tracking-[0.25em] mt-8 hover:bg-[#C0392B] disabled:opacity-30"
           >
             Finalize
           </button>

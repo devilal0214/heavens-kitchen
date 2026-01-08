@@ -1,20 +1,19 @@
-
 export enum OrderStatus {
-  PENDING = 'PENDING',
-  ACCEPTED = 'ACCEPTED',
-  PREPARING = 'PREPARING',
-  READY = 'READY',
-  OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY',
-  DELIVERED = 'DELIVERED',
-  REJECTED = 'REJECTED'
+  PENDING = "PENDING",
+  ACCEPTED = "ACCEPTED",
+  PREPARING = "PREPARING",
+  READY = "READY",
+  OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY",
+  DELIVERED = "DELIVERED",
+  REJECTED = "REJECTED",
 }
 
 export enum UserRole {
-  SUPER_ADMIN = 'SUPER_ADMIN',
-  ADMIN = 'ADMIN',
-  OUTLET_OWNER = 'OUTLET_OWNER',
-  MANAGER = 'MANAGER',
-  CUSTOMER = 'CUSTOMER'
+  SUPER_ADMIN = "SUPER_ADMIN",
+  ADMIN = "ADMIN",
+  OUTLET_OWNER = "OUTLET_OWNER",
+  MANAGER = "MANAGER",
+  CUSTOMER = "CUSTOMER",
 }
 
 export interface Coordinates {
@@ -35,6 +34,7 @@ export interface Outlet {
   isActive: boolean;
   rating: number;
   totalRatings: number;
+  directionsLink?: string;
 }
 
 export interface DeliveryTier {
@@ -118,8 +118,8 @@ export interface MenuItem {
   serves?: VariantServings;
   imageUrl: string;
   isAvailable: boolean;
-  isSpicy: 'None' | 'Mild' | 'Medium' | 'Hot';
-  foodType: 'Veg' | 'Non-Veg';
+  isSpicy: "None" | "Mild" | "Medium" | "Hot";
+  foodType: "Veg" | "Non-Veg";
   inventoryItems: { itemId: string; qty: number }[];
   discountPercentage?: number;
 }
@@ -133,7 +133,7 @@ export interface VariantPrices {
 export interface OrderItem {
   menuItemId: string;
   name: string;
-  variant: 'full' | 'half' | 'qtr';
+  variant: "full" | "half" | "qtr";
   price: number;
   quantity: number;
 }
@@ -152,7 +152,7 @@ export interface Order {
   total: number;
   status: OrderStatus;
   timestamp: number;
-  paymentMethod: 'UPI' | 'CARD' | 'COD';
+  paymentMethod: "UPI" | "CARD" | "COD";
   history: { status: OrderStatus; time: number; updatedBy: string }[];
   isRated?: boolean;
 }
@@ -169,7 +169,7 @@ export interface ManualInvoice {
   deliveryCharge: number;
   total: number;
   timestamp: number;
-  paymentMethod: 'UPI' | 'CARD' | 'COD' | 'CASH';
+  paymentMethod: "UPI" | "CARD" | "COD" | "CASH";
 }
 
 export interface Review {

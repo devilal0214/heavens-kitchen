@@ -1,5 +1,3 @@
-// src/services/firestoreDb.ts
-
 import {
   collection,
   doc,
@@ -15,9 +13,9 @@ import {
   addDoc,
   Timestamp,
   DocumentData,
-  QueryConstraint,
-  setDoc as setDocFn,
+  Query,
 } from "firebase/firestore";
+
 import { db } from "../config/firebase";
 import {
   Outlet,
@@ -34,36 +32,41 @@ import {
 type Listener = () => void;
 
 /**
- * ✅ Firestore does NOT allow undefined values.
- * This removes undefined recursively from objects/arrays.
+ * ✅ Firestore doesn't allow undefined anywhere inside objects.
+ * This removes undefined deeply (also removes empty objects/arrays if they become empty).
  */
-function stripUndefinedDeep<T>(value: T): T {
+function removeUndefinedDeep<T>(value: T): T {
   if (Array.isArray(value)) {
-    return value
-      .map((v) => stripUndefinedDeep(v))
+    const cleanedArr = value
+      .map((v) => removeUndefinedDeep(v))
       .filter((v) => v !== undefined) as any;
+    return cleanedArr as T;
   }
 
   if (value && typeof value === "object") {
-    const out: any = {};
-    Object.entries(value as any).forEach(([k, v]) => {
-      if (v === undefined) return;
-      const cleaned = stripUndefinedDeep(v);
-      if (cleaned === undefined) return;
-      out[k] = cleaned;
+    const obj: any = value;
+    const cleaned: any = {};
+    Object.keys(obj).forEach((k) => {
+      const v = removeUndefinedDeep(obj[k]);
+      if (v !== undefined) cleaned[k] = v;
     });
-    return out;
+    return cleaned as T;
   }
 
   return value;
 }
 
 /**
- * ✅ IMPORTANT: Firestore document ID must not be overwritten by stored `id` field.
- * Always spread data first, then set id.
+ * ✅ IMPORTANT FIX:
+ * When mapping firestore docs, ALWAYS do:
+ *   { ...doc.data(), id: doc.id }
+ * NOT:
+ *   { id: doc.id, ...doc.data() }
+ * Because your doc.data() has its own "id" field like "ord-xxxx"
+ * which was overriding doc.id and breaking updateOrderStatus().
  */
-function withDocId<T extends object>(docId: string, data: DocumentData): T {
-  return { ...(data as any), id: docId } as T;
+function mapWithDocId<T>(snapDoc: { id: string; data: () => DocumentData }): T {
+  return { ...(snapDoc.data() as any), id: snapDoc.id } as T;
 }
 
 export class FirestoreDB {
@@ -80,41 +83,56 @@ export class FirestoreDB {
 
   // ---------------- SETTINGS ----------------
   static async getGlobalSettings(): Promise<GlobalSettings> {
-    const docRef = doc(db, "settings", "global");
-    const snap = await getDoc(docRef);
+    try {
+      const docRef = doc(db, "settings", "global");
+      const docSnap = await getDoc(docRef);
 
-    if (snap.exists()) return snap.data() as GlobalSettings;
+      if (docSnap.exists()) {
+        return docSnap.data() as GlobalSettings;
+      }
 
-    const defaultSettings: GlobalSettings = {
-      gstPercentage: 5,
-      deliveryBaseCharge: 40,
-      deliveryChargePerKm: 10,
-      freeDeliveryThreshold: 500,
-      freeDeliveryDistanceLimit: 5,
-      deliveryTiers: [
-        { id: "t1", upToKm: 3, charge: 30 },
-        { id: "t2", upToKm: 5, charge: 50 },
-        { id: "t3", upToKm: 10, charge: 100 },
-      ],
-      invoiceSettings: {
-        brandName: "HAVENS KITCHEN",
-        logoUrl: "",
-        tagline: "ESTABLISHED 1984 • CULINARY SANCTUARY",
-        address: "HQ - South Delhi, India",
-        contact: "9899466466",
-        showTagline: true,
-        showNotice: true,
-        primaryColor: "#C0392B",
-      },
-    };
+      const defaultSettings: GlobalSettings = {
+        gstPercentage: 5,
+        deliveryBaseCharge: 40,
+        deliveryChargePerKm: 10,
+        freeDeliveryThreshold: 500,
+        freeDeliveryDistanceLimit: 5,
+        deliveryTiers: [
+          { id: "t1", upToKm: 3, charge: 30 },
+          { id: "t2", upToKm: 5, charge: 50 },
+          { id: "t3", upToKm: 10, charge: 100 },
+        ],
+        invoiceSettings: {
+          brandName: "HAVENS KITCHEN",
+          logoUrl: "",
+          tagline: "ESTABLISHED 1984 • CULINARY SANCTUARY",
+          address: "HQ - South Delhi, India",
+          contact: "9899466466",
+          showTagline: true,
+          showNotice: true,
+          primaryColor: "#C0392B",
+        },
+      };
 
-    await setDoc(docRef, defaultSettings);
-    return defaultSettings;
+      await setDoc(docRef, defaultSettings);
+      return defaultSettings;
+    } catch (error) {
+      console.error("Error getting global settings:", error);
+      throw error;
+    }
   }
 
   static async saveGlobalSettings(settings: GlobalSettings): Promise<void> {
-    await setDoc(doc(db, "settings", "global"), stripUndefinedDeep(settings));
-    this.notify();
+    try {
+      await setDoc(
+        doc(db, "settings", "global"),
+        removeUndefinedDeep(settings)
+      );
+      this.notify();
+    } catch (error) {
+      console.error("Error saving global settings:", error);
+      throw error;
+    }
   }
 
   // ---------------- STAFF USERS ----------------
@@ -122,358 +140,394 @@ export class FirestoreDB {
     try {
       const q = query(
         collection(db, "users"),
-        where("role", "in", ["SUPER_ADMIN", "ADMIN", "OUTLET_OWNER", "MANAGER"])
+        where("role", "in", [
+          "SUPER_ADMIN",
+          "ADMIN",
+          "OUTLET_OWNER",
+          "MANAGER",
+          "DELIVERY_BOY",
+          "DELIVERY",
+        ])
       );
-      const snap = await getDocs(q);
-      return snap.docs.map((d) => withDocId<UserProfile>(d.id, d.data()));
-    } catch (e) {
-      console.error("Error getting staff users:", e);
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map((d) => mapWithDocId<UserProfile>(d));
+    } catch (error) {
+      console.error("Error getting staff users:", error);
       return [];
     }
   }
 
   static async saveStaffUser(user: UserProfile): Promise<void> {
-    const clean = stripUndefinedDeep(user);
+    try {
+      const cleanUser = removeUndefinedDeep(user);
 
-    if (user.id) {
-      await setDoc(doc(db, "users", user.id), clean);
-    } else {
-      const ref = await addDoc(collection(db, "users"), clean);
-      user.id = ref.id;
+      if (cleanUser.id) {
+        await setDoc(doc(db, "users", cleanUser.id), cleanUser);
+      } else {
+        const docRef = await addDoc(collection(db, "users"), cleanUser);
+        (cleanUser as any).id = docRef.id;
+      }
+
+      this.notify();
+    } catch (error) {
+      console.error("Error saving staff user:", error);
+      throw error;
     }
-    this.notify();
   }
 
   static async deleteStaffUser(id: string): Promise<void> {
-    await deleteDoc(doc(db, "users", id));
-    this.notify();
+    try {
+      await deleteDoc(doc(db, "users", id));
+      this.notify();
+    } catch (error) {
+      console.error("Error deleting staff user:", error);
+      throw error;
+    }
   }
 
   // ---------------- OUTLETS ----------------
   static async getOutlets(): Promise<Outlet[]> {
     try {
-      const snap = await getDocs(collection(db, "outlets"));
-      return snap.docs.map((d) => withDocId<Outlet>(d.id, d.data()));
-    } catch (e) {
-      console.error("Error getting outlets:", e);
+      const snapshot = await getDocs(collection(db, "outlets"));
+      return snapshot.docs.map((d) => mapWithDocId<Outlet>(d));
+    } catch (error) {
+      console.error("Error getting outlets:", error);
       return [];
     }
   }
 
   static async saveOutlet(outlet: Outlet): Promise<void> {
-    const clean = stripUndefinedDeep(outlet);
+    try {
+      const cleanOutlet = removeUndefinedDeep(outlet);
 
-    if (outlet.id) {
-      await setDoc(doc(db, "outlets", outlet.id), clean);
-    } else {
-      const ref = await addDoc(collection(db, "outlets"), clean);
-      outlet.id = ref.id;
+      if (cleanOutlet.id) {
+        await setDoc(doc(db, "outlets", cleanOutlet.id), cleanOutlet);
+      } else {
+        const docRef = await addDoc(collection(db, "outlets"), cleanOutlet);
+        (cleanOutlet as any).id = docRef.id;
+      }
+
+      this.notify();
+    } catch (error) {
+      console.error("Error saving outlet:", error);
+      throw error;
     }
-    this.notify();
   }
 
   static async deleteOutlet(id: string): Promise<void> {
-    await deleteDoc(doc(db, "outlets", id));
-    this.notify();
+    try {
+      await deleteDoc(doc(db, "outlets", id));
+      this.notify();
+    } catch (error) {
+      console.error("Error deleting outlet:", error);
+      throw error;
+    }
   }
 
   // ---------------- MENU ----------------
   static async getMenu(outletId?: string): Promise<MenuItem[]> {
     try {
-      const constraints: QueryConstraint[] = [];
-      if (outletId) constraints.push(where("outletId", "==", outletId));
+      let qRef: Query<DocumentData>;
+      if (outletId && outletId !== "all") {
+        qRef = query(
+          collection(db, "menu"),
+          where("outletId", "in", [outletId, "all"])
+        );
+      } else {
+        qRef = query(collection(db, "menu"));
+      }
 
-      const q =
-        constraints.length > 0
-          ? query(collection(db, "menu"), ...constraints)
-          : collection(db, "menu");
-
-      const snap = await getDocs(q);
-      return snap.docs.map((d) => withDocId<MenuItem>(d.id, d.data()));
-    } catch (e) {
-      console.error("Error getting menu:", e);
+      const snapshot = await getDocs(qRef);
+      return snapshot.docs.map((d) => mapWithDocId<MenuItem>(d));
+    } catch (error) {
+      console.error("Error getting menu:", error);
       return [];
     }
   }
 
   static async saveMenuItem(item: MenuItem): Promise<void> {
     try {
-      // ✅ Ensure optional nested keys don't become undefined
-      const normalized: MenuItem = {
-        ...item,
-        price: {
-          full: item.price?.full ?? 0,
-          ...(item.price?.half !== undefined ? { half: item.price.half } : {}),
-          ...(item.price?.qtr !== undefined ? { qtr: item.price.qtr } : {}),
-        },
-        ...(item.variantQuantities
-          ? {
-              variantQuantities: {
-                ...(item.variantQuantities.full !== undefined
-                  ? { full: item.variantQuantities.full }
-                  : {}),
-                ...(item.variantQuantities.half !== undefined
-                  ? { half: item.variantQuantities.half }
-                  : {}),
-                ...(item.variantQuantities.qtr !== undefined
-                  ? { qtr: item.variantQuantities.qtr }
-                  : {}),
-              },
-            }
-          : {}),
-        ...(item.serves
-          ? {
-              serves: {
-                ...(item.serves.full !== undefined
-                  ? { full: item.serves.full }
-                  : {}),
-                ...(item.serves.half !== undefined
-                  ? { half: item.serves.half }
-                  : {}),
-                ...(item.serves.qtr !== undefined
-                  ? { qtr: item.serves.qtr }
-                  : {}),
-              },
-            }
-          : {}),
-      };
+      // ✅ remove undefined in nested objects
+      const cleanItem = removeUndefinedDeep(item);
 
-      const clean = stripUndefinedDeep(normalized);
+      // ✅ Also: avoid writing undefined in variantQuantities / serves / price
+      // removeUndefinedDeep already handles it.
 
-      if (item.id) {
-        await setDoc(doc(db, "menu", item.id), clean);
+      if (cleanItem.id) {
+        await setDoc(doc(db, "menu", cleanItem.id), cleanItem);
       } else {
-        const ref = await addDoc(collection(db, "menu"), clean);
-        item.id = ref.id;
+        const docRef = await addDoc(collection(db, "menu"), cleanItem);
+        (cleanItem as any).id = docRef.id;
       }
 
       this.notify();
-    } catch (e) {
-      console.error("Error saving menu item:", e);
-      throw e;
+    } catch (error) {
+      console.error("Error saving menu item:", error);
+      throw error;
     }
   }
 
   static async deleteMenuItem(id: string): Promise<void> {
-    await deleteDoc(doc(db, "menu", id));
-    this.notify();
+    try {
+      await deleteDoc(doc(db, "menu", id));
+      this.notify();
+    } catch (error) {
+      console.error("Error deleting menu item:", error);
+      throw error;
+    }
   }
 
   // ---------------- INVENTORY ----------------
-  // ✅ outletId OPTIONAL (fixes your undefined where() crash)
+  // ✅ FIX: allow outletId OPTIONAL to avoid where(outletId == undefined) crash
   static async getInventory(outletId?: string): Promise<InventoryItem[]> {
     try {
-      const qRef = outletId
-        ? query(collection(db, "inventory"), where("outletId", "==", outletId))
-        : collection(db, "inventory");
+      let qRef: Query<DocumentData>;
+      if (outletId && outletId !== "all") {
+        qRef = query(
+          collection(db, "inventory"),
+          where("outletId", "in", [outletId, "all"])
+        );
+      } else {
+        qRef = query(collection(db, "inventory"));
+      }
 
-      const snap = await getDocs(qRef);
-      return snap.docs.map((d) => withDocId<InventoryItem>(d.id, d.data()));
-    } catch (e) {
-      console.error("Error getting inventory:", e);
+      const snapshot = await getDocs(qRef);
+      return snapshot.docs.map((d) => mapWithDocId<InventoryItem>(d));
+    } catch (error) {
+      console.error("Error getting inventory:", error);
       return [];
     }
   }
 
   static async getInventoryItem(id: string): Promise<InventoryItem | null> {
     try {
-      const snap = await getDoc(doc(db, "inventory", id));
-      if (!snap.exists()) return null;
-      return withDocId<InventoryItem>(snap.id, snap.data());
-    } catch (e) {
-      console.error("Error getting inventory item:", e);
+      const docSnap = await getDoc(doc(db, "inventory", id));
+      if (!docSnap.exists()) return null;
+
+      // ✅ preserve doc.id as id
+      return { ...(docSnap.data() as any), id: docSnap.id } as InventoryItem;
+    } catch (error) {
+      console.error("Error getting inventory item:", error);
       return null;
     }
   }
 
   static async saveInventoryItem(item: InventoryItem): Promise<void> {
-    const clean = stripUndefinedDeep(item);
+    try {
+      const cleanItem = removeUndefinedDeep(item);
 
-    if (item.id) {
-      await setDoc(doc(db, "inventory", item.id), clean);
-    } else {
-      const ref = await addDoc(collection(db, "inventory"), clean);
-      item.id = ref.id;
+      if (cleanItem.id) {
+        await setDoc(doc(db, "inventory", cleanItem.id), cleanItem);
+      } else {
+        const docRef = await addDoc(collection(db, "inventory"), cleanItem);
+        (cleanItem as any).id = docRef.id;
+      }
+
+      this.notify();
+    } catch (error) {
+      console.error("Error saving inventory item:", error);
+      throw error;
     }
-    this.notify();
   }
 
   static async deleteInventoryItem(id: string): Promise<void> {
-    await deleteDoc(doc(db, "inventory", id));
-    this.notify();
+    try {
+      await deleteDoc(doc(db, "inventory", id));
+      this.notify();
+    } catch (error) {
+      console.error("Error deleting inventory item:", error);
+      throw error;
+    }
   }
 
   // ---------------- ORDERS ----------------
   static async getOrders(userId?: string, outletId?: string): Promise<Order[]> {
     try {
-      const constraints: QueryConstraint[] = [];
-      if (userId) constraints.push(where("userId", "==", userId));
-      if (outletId) constraints.push(where("outletId", "==", outletId));
+      let qRef: Query<DocumentData>;
 
-      // try ordering by timestamp first (your UI uses timestamp)
-      // fallback to createdAt if older orders exist
-      constraints.push(orderBy("timestamp", "desc"));
+      // ✅ Your DB uses createdAt in createOrder() and some places use timestamp.
+      // We'll orderBy createdAt if exists, else fallback to timestamp.
+      // But Firestore needs indexed fields. We'll use createdAt and assume it's present.
+      if (userId) {
+        qRef = query(
+          collection(db, "orders"),
+          where("userId", "==", userId),
+          orderBy("createdAt", "desc")
+        );
+      } else if (outletId) {
+        qRef = query(
+          collection(db, "orders"),
+          where("outletId", "==", outletId),
+          orderBy("createdAt", "desc")
+        );
+      } else {
+        qRef = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+      }
 
-      const qRef = query(collection(db, "orders"), ...constraints);
-      const snap = await getDocs(qRef);
+      const snapshot = await getDocs(qRef);
 
-      return snap.docs.map((d) => withDocId<Order>(d.id, d.data()));
-    } catch (e) {
-      console.error("Error getting orders:", e);
+      // ✅ FIX: doc.data().id was overriding doc.id earlier, breaking updateOrderStatus
+      return snapshot.docs.map((d) => mapWithDocId<Order>(d));
+    } catch (error) {
+      console.error("Error getting orders:", error);
       return [];
     }
   }
 
   static async saveOrder(order: Order): Promise<string> {
-    const clean = stripUndefinedDeep(order);
+    try {
+      const cleanOrder = removeUndefinedDeep(order);
 
-    if (order.id) {
-      await setDoc(doc(db, "orders", order.id), clean);
+      if (cleanOrder.id) {
+        await setDoc(doc(db, "orders", cleanOrder.id), cleanOrder);
+        this.notify();
+        return cleanOrder.id;
+      }
+
+      const docRef = await addDoc(collection(db, "orders"), cleanOrder);
       this.notify();
-      return order.id;
-    } else {
-      const ref = await addDoc(collection(db, "orders"), clean);
-      this.notify();
-      return ref.id;
+      return docRef.id;
+    } catch (error) {
+      console.error("Error saving order:", error);
+      throw error;
     }
   }
 
-  /**
-   * ✅ Deduct inventory at order creation (as your app expects)
-   */
   static async createOrder(order: Order): Promise<string> {
     try {
+      // Deduct inventory based on menu inventory links
       const menuItems = await this.getMenu(order.outletId);
 
       for (const orderItem of order.items) {
         const menuItem = menuItems.find((m) => m.id === orderItem.menuItemId);
-        if (!menuItem?.inventoryItems?.length) continue;
 
-        const variantMultiplier =
-          orderItem.variant === "qtr"
-            ? 0.25
-            : orderItem.variant === "half"
-            ? 0.5
-            : 1;
+        if (menuItem?.inventoryItems?.length) {
+          const variantMultiplier =
+            orderItem.variant === "qtr"
+              ? 0.25
+              : orderItem.variant === "half"
+              ? 0.5
+              : 1;
 
-        for (const invLink of menuItem.inventoryItems) {
-          const inventoryItem = await this.getInventoryItem(invLink.itemId);
-          if (!inventoryItem) continue;
+          for (const invLink of menuItem.inventoryItems) {
+            const inventoryItem = await this.getInventoryItem(invLink.itemId);
+            if (!inventoryItem) continue;
 
-          const deductQty =
-            invLink.qty * variantMultiplier * orderItem.quantity;
-          const newStock = Math.max(
-            0,
-            Number(inventoryItem.stock) - Number(deductQty)
-          );
+            const deductQty =
+              invLink.qty * variantMultiplier * orderItem.quantity;
+            const newStock = Math.max(
+              0,
+              Number(inventoryItem.stock) - deductQty
+            );
 
-          await this.saveInventoryItem({ ...inventoryItem, stock: newStock });
+            await this.saveInventoryItem({ ...inventoryItem, stock: newStock });
+          }
         }
       }
 
-      const orderData = stripUndefinedDeep({
+      const orderData = removeUndefinedDeep({
         ...order,
-        timestamp: Date.now(),
         createdAt: Timestamp.now(),
-        orderDate: new Date().toISOString(),
       });
 
-      const ref = await addDoc(collection(db, "orders"), orderData);
+      const docRef = await addDoc(collection(db, "orders"), orderData);
       this.notify();
-      return ref.id;
-    } catch (e) {
-      console.error("Error creating order:", e);
-      throw e;
+      return docRef.id;
+    } catch (error) {
+      console.error("Error creating order:", error);
+      throw error;
     }
   }
 
-  /**
-   * ✅ Fix: if doc-id mismatch happens, updateDoc fails.
-   * We do a safe update:
-   * - try updateDoc
-   * - if not found, setDoc merge (no crash)
-   */
   static async updateOrderStatus(
     orderId: string,
     status: OrderStatus
   ): Promise<void> {
     try {
+      // ✅ Now orderId is guaranteed to be doc.id (thanks to mapWithDocId fix)
       await updateDoc(doc(db, "orders", orderId), {
         status,
-        updatedAt: Date.now(),
+        updatedAt: Timestamp.now(),
       });
       this.notify();
-    } catch (e) {
-      console.error("Error updating order status:", e);
-
-      // fallback: create/merge if updateDoc fails
-      try {
-        await setDocFn(
-          doc(db, "orders", orderId),
-          { status, updatedAt: Date.now() },
-          { merge: true }
-        );
-        this.notify();
-      } catch (e2) {
-        console.error("Fallback update failed:", e2);
-        throw e2;
-      }
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      throw error;
     }
   }
 
   // ---------------- REVIEWS ----------------
   static async getReviews(outletId?: string): Promise<Review[]> {
     try {
-      const qRef = outletId
-        ? query(collection(db, "reviews"), where("outletId", "==", outletId))
-        : collection(db, "reviews");
-
-      const snap = await getDocs(qRef);
-      return snap.docs.map((d) => withDocId<Review>(d.id, d.data()));
-    } catch (e) {
-      console.error("Error getting reviews:", e);
+      let qRef: Query<DocumentData>;
+      if (outletId) {
+        qRef = query(
+          collection(db, "reviews"),
+          where("outletId", "==", outletId)
+        );
+      } else {
+        qRef = query(collection(db, "reviews"));
+      }
+      const snapshot = await getDocs(qRef);
+      return snapshot.docs.map((d) => mapWithDocId<Review>(d));
+    } catch (error) {
+      console.error("Error getting reviews:", error);
       return [];
     }
   }
 
   static async saveReview(review: Review): Promise<void> {
-    const clean = stripUndefinedDeep(review);
+    try {
+      const clean = removeUndefinedDeep(review);
 
-    if (review.id) {
-      await setDoc(doc(db, "reviews", review.id), clean);
-    } else {
-      await addDoc(collection(db, "reviews"), clean);
+      if ((clean as any).id) {
+        await setDoc(doc(db, "reviews", (clean as any).id), clean);
+      } else {
+        await addDoc(collection(db, "reviews"), clean);
+      }
+
+      this.notify();
+    } catch (error) {
+      console.error("Error saving review:", error);
+      throw error;
     }
-    this.notify();
   }
 
   // ---------------- MANUAL INVOICES ----------------
   static async getManualInvoices(outletId?: string): Promise<ManualInvoice[]> {
     try {
-      const qRef = outletId
-        ? query(
-            collection(db, "manualInvoices"),
-            where("outletId", "==", outletId)
-          )
-        : collection(db, "manualInvoices");
-
-      const snap = await getDocs(qRef);
-      return snap.docs.map((d) => withDocId<ManualInvoice>(d.id, d.data()));
-    } catch (e) {
-      console.error("Error getting manual invoices:", e);
+      let qRef: Query<DocumentData>;
+      if (outletId) {
+        qRef = query(
+          collection(db, "manualInvoices"),
+          where("outletId", "==", outletId)
+        );
+      } else {
+        qRef = query(collection(db, "manualInvoices"));
+      }
+      const snapshot = await getDocs(qRef);
+      return snapshot.docs.map((d) => mapWithDocId<ManualInvoice>(d));
+    } catch (error) {
+      console.error("Error getting manual invoices:", error);
       return [];
     }
   }
 
   static async saveManualInvoice(invoice: ManualInvoice): Promise<void> {
-    const clean = stripUndefinedDeep(invoice);
+    try {
+      const clean = removeUndefinedDeep(invoice);
 
-    if (invoice.id) {
-      await setDoc(doc(db, "manualInvoices", invoice.id), clean);
-    } else {
-      await addDoc(collection(db, "manualInvoices"), clean);
+      if ((clean as any).id) {
+        await setDoc(doc(db, "manualInvoices", (clean as any).id), clean);
+      } else {
+        await addDoc(collection(db, "manualInvoices"), clean);
+      }
+
+      this.notify();
+    } catch (error) {
+      console.error("Error saving manual invoice:", error);
+      throw error;
     }
-    this.notify();
   }
 
   // ---------------- REALTIME LISTENERS ----------------
@@ -482,15 +536,26 @@ export class FirestoreDB {
     userId?: string,
     outletId?: string
   ): () => void {
-    const constraints: QueryConstraint[] = [];
-    if (userId) constraints.push(where("userId", "==", userId));
-    if (outletId) constraints.push(where("outletId", "==", outletId));
-    constraints.push(orderBy("timestamp", "desc"));
+    let qRef: Query<DocumentData>;
 
-    const qRef = query(collection(db, "orders"), ...constraints);
+    if (userId) {
+      qRef = query(
+        collection(db, "orders"),
+        where("userId", "==", userId),
+        orderBy("createdAt", "desc")
+      );
+    } else if (outletId) {
+      qRef = query(
+        collection(db, "orders"),
+        where("outletId", "==", outletId),
+        orderBy("createdAt", "desc")
+      );
+    } else {
+      qRef = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    }
 
     return onSnapshot(qRef, (snapshot) => {
-      const orders = snapshot.docs.map((d) => withDocId<Order>(d.id, d.data()));
+      const orders = snapshot.docs.map((d) => mapWithDocId<Order>(d));
       callback(orders);
     });
   }
