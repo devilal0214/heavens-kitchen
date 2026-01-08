@@ -4,6 +4,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../config/firebase";
 import FirestoreDB from "../services/firestoreDb";
 import html2pdf from "html2pdf.js";
+import { FaTrash } from "react-icons/fa";
 import {
   Order,
   MenuItem,
@@ -2257,7 +2258,7 @@ const MenuTab: React.FC<any> = ({
                   className="absolute top-4 right-4 w-10 h-10 bg-black/60 backdrop-blur-md text-white rounded-[15px] flex items-center justify-center hover:bg-red-500"
                   title="Delete"
                 >
-                  🗑️
+                  <FaTrash />
                 </button>
               </div>
 
@@ -2339,10 +2340,10 @@ const InventoryTab: React.FC<any> = ({
           >
             <button
               onClick={() => onDelete(item.id)}
-              className="absolute top-6 right-6 w-10 h-10 bg-white rounded-[15px] flex items-center justify-center text-red-400 shadow hover:bg-red-500 hover:text-white"
+              className="absolute top-4 right-4 w-10 h-10 bg-black/60 backdrop-blur-md text-white rounded-[15px] flex items-center justify-center hover:bg-red-500"
               title="Delete"
             >
-              🗑️
+              <FaTrash />
             </button>
 
             <h4 className="text-2xl font-playfair font-semibold text-gray-800 mb-2">
@@ -2355,7 +2356,7 @@ const InventoryTab: React.FC<any> = ({
             </p>
 
             <div className="flex items-center justify-between mb-8">
-              <span className="text-6xl font-playfair font-medium text-gray-900 tabular-nums">
+              <span className="text-4xl font-inter font-medium text-gray-900 tabular-nums">
                 {item.stock}
               </span>
               <button
@@ -2438,10 +2439,10 @@ const OutletTab: React.FC<any> = ({
             {user.role === UserRole.SUPER_ADMIN && (
               <button
                 onClick={() => onDelete(o.id)}
-                className="px-5 py-3 text-red-400 hover:text-red-600 transition-colors"
+                className="top-4 right-4 w-10 h-10 bg-black/60 backdrop-blur-md text-white rounded-[15px] flex items-center justify-center hover:bg-red-500"
                 title="Delete"
               >
-                🗑️
+                <FaTrash />
               </button>
             )}
           </div>
