@@ -122,6 +122,8 @@ const HomeContent: React.FC<HomeContentProps> = ({
             <h2 className="text-4xl md:text-5xl font-playfair font-bold text-gray-900 leading-tight">
               Loved by Our Regulars
             </h2>
+
+
           </div>
           <button
             onClick={onExploreMenu}
@@ -350,6 +352,8 @@ const HomeContent: React.FC<HomeContentProps> = ({
         <h2 className="text-4xl md:text-6xl font-playfair mb-16 animate-fade-up">
           Our Sanctuaries
         </h2>
+
+
         <div className="flex flex-wrap justify-center gap-10">
           <div
             className="bg-white p-12 rounded-[15px] flex-1 min-w-[320px] border border-gray-100 shadow-xl hover:shadow-2xl transition-all group animate-fade-up"
@@ -392,7 +396,6 @@ const HomeContent: React.FC<HomeContentProps> = ({
           <h2 className="text-4xl md:text-5xl font-playfair mb-6 animate-fade-up">
             Experience Culinary Excellence
           </h2>
-          <div className="w-20 h-1 bg-[#FFB30E] mx-auto rounded-[15px] animate-blur-in"></div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
@@ -409,7 +412,7 @@ const HomeContent: React.FC<HomeContentProps> = ({
               <div className="text-5xl mb-6 transform group-hover:scale-110 transition-transform duration-300">
                 {f.icon}
               </div>
-              <h3 className="text-xl font-bold mb-4 font-montserrat">
+              <h3 className="text-xl font-semibold mb-4 font-montserrat">
                 {f.title}
               </h3>
               <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
@@ -457,7 +460,7 @@ const ProductCard: React.FC<{
       >
         <div className="flex items-center gap-2">
           <div
-            className={`w-1.5 h-1.5 rounded-full ${
+            className={`w-1.5 h-1.5 rounded-[15px] ${
               isActive ? "bg-[#C0392B]" : "bg-gray-200"
             }`}
           ></div>
@@ -505,7 +508,7 @@ const ProductCard: React.FC<{
         />
         <div className="absolute top-4 left-4">
           <div
-            className={`w-4 h-4 rounded-full border-2 border-white shadow-sm ${
+            className={`w-4 h-4 rounded-[15px] border-2 border-white shadow-sm ${
               item.foodType === "Veg" ? "bg-emerald-500" : "bg-red-500"
             }`}
           ></div>
@@ -606,7 +609,8 @@ const ProductCard: React.FC<{
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              <span>Add To Sanctuary</span>
+              <span>Add To Order</span>
+
             </button>
           )}
         </div>

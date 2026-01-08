@@ -1,0 +1,10 @@
+/* 🔒 Remove blinking typing cursor everywhere */
+* {
+    caret-color: transparent;
+  }
+  
+  /* ✅ Allow cursor only inside form fields */
+  input,
+  textarea {
+    caret-color: auto;
+  }

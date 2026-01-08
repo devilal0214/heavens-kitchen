@@ -5,20 +5,16 @@ const About: React.FC = () => {
   return (
     <div className="bg-white w-full overflow-x-hidden min-h-screen">
       {/* Cinematic Brand Heritage Hero - Exact Match to New Reference Image */}
-      <section className="relative h-screen w-full flex items-center justify-center overflow-hidden bg-[#0a0a0a]">
-        {/* Multi-layered Cinematic Background */}
+      <section className="relative h-[44vh] w-full flex items-center justify-center overflow-hidden bg-[#0a0a0a]">
+      {/* Multi-layered Cinematic Background */}
         <div className="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&q=80&w=2000" 
-            alt="Havens Kitchen Legacy" 
-            className="w-full h-full object-cover opacity-70"
-          />
-          {/* Subtle Vignette & Dark Overlays */}
-          <div className="absolute inset-0 bg-black/40"></div>
-          
-          {/* CRITICAL: The bottom white floor fade matching the reference */}
-          <div className="absolute bottom-0 left-0 right-0 h-[60%] bg-gradient-to-t from-white via-white/95 to-transparent"></div>
-        </div>
+  <img 
+    src="https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=2400&auto=format&fit=crop"
+    alt="Havens Kitchen Legacy"
+    className="w-full h-full object-cover"
+  />
+  <div className="absolute inset-0 bg-black/65"></div>
+</div>
 
         {/* Content Overlay */}
         <div className="relative z-10 text-center px-6 max-w-7xl animate-fade-up">
@@ -33,14 +29,14 @@ const About: React.FC = () => {
           </div>
           
           {/* Main Hero Headline - Mixed Weights/Colors */}
-          <h1 className="text-[3.5rem] md:text-[7rem] lg:text-[9rem] font-playfair leading-none tracking-tight text-white mb-6 drop-shadow-2xl">
-            A Legacy of <span className="text-[#C0392B] font-bold">Taste.</span>
-          </h1>
+          <h1 className="text-4xl md:text-7xl font-playfair leading-tight tracking-tight text-white mb-6 drop-shadow-2xl">
+  A Legacy of <span className="text-[#ffb30e] font-bold">Taste.</span>
+</h1>
           
           {/* Action/Descriptor Line - Wide Spacing */}
           <div className="mt-6 md:mt-8">
-            <p className="text-gray-500 font-black uppercase tracking-[0.45em] text-[8px] md:text-[11px] flex items-center justify-center gap-3 md:gap-5 opacity-80">
-              TAKEAWAY <span className="text-gray-400 opacity-50">•</span> DELIVERY <span className="text-gray-400 opacity-50">•</span> MEMORIES
+          <p className="text-white font-black uppercase tracking-[0.45em] text-[8px] md:text-[11px] flex items-center justify-center gap-3 md:gap-5 opacity-80">
+          TAKEAWAY <span className="text-white opacity-70">•</span> DELIVERY <span className="text-white opacity-70">•</span> MEMORIES
             </p>
           </div>
         </div>
@@ -57,7 +53,6 @@ const About: React.FC = () => {
           <div className="animate-fade-up">
             <div className="mb-12">
                <span className="text-[#C0392B] font-black uppercase tracking-[0.4em] text-[10px]">Our History</span>
-               <div className="h-1 w-12 bg-[#C0392B] mt-2"></div>
             </div>
             <h2 className="text-5xl md:text-8xl font-playfair mb-10 leading-[0.9] text-gray-900 tracking-tighter">
               Our Story, <br/>
@@ -91,17 +86,17 @@ const About: React.FC = () => {
           <div className="relative group">
             <div className="grid grid-cols-2 gap-8 items-stretch">
               <div className="space-y-8">
-                <div className="h-[450px] rounded-[50px] overflow-hidden shadow-2xl relative group-hover:rotate-1 transition-transform duration-1000">
-                  <img src="https://images.unsplash.com/photo-1577214459173-9c8651f59966?auto=format&fit=crop&q=80&w=600" className="w-full h-full object-cover brightness-90 grayscale hover:grayscale-0 transition-all duration-700" alt="Kitchen Craft" />
+                <div className="h-[450px] rounded-[15px] overflow-hidden shadow-2xl relative group-hover:rotate-1 transition-transform duration-1000">
+                  <img src="https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=600" className="w-full h-full object-cover brightness-90 grayscale hover:grayscale-0 transition-all duration-700" alt="Kitchen Craft" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   <div className="absolute bottom-8 left-8 text-white font-playfair italic text-xl">The Hand Crafted.</div>
                 </div>
-                <div className="bg-gray-50 h-32 rounded-[40px] border border-gray-100 p-8 flex items-center justify-center">
+                <div className="bg-gray-50 h-32 rounded-[15px] border border-gray-100 p-8 flex items-center justify-center">
                    <p className="text-gray-400 font-bold uppercase tracking-[0.3em] text-[10px] text-center">Since 1984 • South Delhi</p>
                 </div>
               </div>
               <div className="pt-20">
-                <div className="h-full min-h-[500px] rounded-[50px] overflow-hidden shadow-2xl relative group-hover:-rotate-1 transition-transform duration-1000">
+                <div className="h-full min-h-[500px] rounded-[15px] overflow-hidden shadow-2xl relative group-hover:-rotate-1 transition-transform duration-1000">
                   <img src="https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=600" className="w-full h-full object-cover brightness-90 grayscale hover:grayscale-0 transition-all duration-700" alt="Plated Excellence" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   <div className="absolute bottom-8 left-8 text-white font-playfair italic text-xl">The Sanctuary.</div>

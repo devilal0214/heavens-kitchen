@@ -1,20 +1,47 @@
 
 import React from 'react';
 
-const Parties: React.FC = () => {
+interface PartiesProps {
+  onNavigate: (v: any) => void;
+}
+
+const Parties: React.FC<PartiesProps> = ({ onNavigate }) => {
   return (
-    <div className="pt-28 bg-white">
-      <section className="relative h-[60vh] flex items-center justify-center overflow-hidden">
-        <img 
-          src="https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&q=80&w=2000" 
-          className="absolute inset-0 w-full h-full object-cover brightness-50"
-          alt="Parties"
-        />
-        <div className="relative z-10 text-center text-white px-6">
-          <h4 className="text-[#F4A261] font-montserrat tracking-[0.3em] uppercase mb-4">Events & Celebrations</h4>
-          <h1 className="text-5xl md:text-7xl font-playfair">Host Your Moments</h1>
-        </div>
-      </section>
+    <div className="bg-white">
+   <section className="w-full relative h-[35vh] md:h-[45vh] overflow-hidden mt-[70px] md:mt-0">
+
+{/* Static background image */}
+<img 
+  src="https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=2400&auto=format&fit=crop"
+  alt="Events & Celebrations"
+  className="w-full h-full object-cover"
+/>
+
+{/* Overlay */}
+<div className="absolute inset-0 bg-black/65"></div>
+
+{/* Content */}
+<div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+  <div className="max-w-2xl animate-fade-down">
+    
+    <span className="inline-block px-4 py-1.5 bg-[#FFB30E] text-black text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] rounded-[15px] shadow-xl mb-4 md:mb-6">
+      Events & Celebrations
+    </span>
+
+    <h2 className="text-4xl md:text-7xl font-playfair font-bold text-white drop-shadow-2xl leading-tight">
+      Host Your <span className="italic text-[#FFB30E]">Moments</span>
+    </h2>
+
+    <div className="h-[1px] w-12 bg-white/30 mx-auto my-4 md:my-6"></div>
+
+    <p className="text-white/90 font-black uppercase tracking-[0.4em] text-[10px] md:text-xs">
+      Birthdays • Corporate • Celebrations
+    </p>
+
+  </div>
+</div>
+
+</section>
 
       <section className="max-w-7xl mx-auto px-6 py-24">
         <div className="text-center mb-20">
@@ -23,7 +50,7 @@ const Parties: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          <div className="bg-gray-50 p-12 rounded-[50px] hover:shadow-xl transition-all border border-gray-100">
+          <div className="bg-gray-50 p-12 rounded-[15px] hover:shadow-xl transition-all border border-gray-100">
             <div className="text-4xl mb-6">🎂</div>
             <h3 className="text-3xl font-playfair mb-6">Birthday Parties</h3>
             <p className="text-gray-600 mb-8 leading-relaxed">Special decor, customized menus, and a dedicated host to ensure your celebration is exactly how you imagined it.</p>
@@ -32,10 +59,14 @@ const Parties: React.FC = () => {
               <li className="flex items-center"><span className="text-red-500 mr-2">✓</span> Themed Decorations</li>
               <li className="flex items-center"><span className="text-red-500 mr-2">✓</span> DJ & Sound System</li>
             </ul>
-            <button className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold">Enquire Now</button>
-          </div>
+            <button
+  onClick={() => onNavigate('contact')}
+  className="w-full py-4 bg-gray-900 text-white rounded-[15px] font-bold hover:bg-black transition-all"
+>
+  Enquire Now
+</button>          </div>
 
-          <div className="bg-gray-50 p-12 rounded-[50px] hover:shadow-xl transition-all border border-gray-100">
+          <div className="bg-gray-50 p-12 rounded-[15px] hover:shadow-xl transition-all border border-gray-100">
             <div className="text-4xl mb-6">💼</div>
             <h3 className="text-3xl font-playfair mb-6">Corporate Dinners</h3>
             <p className="text-gray-600 mb-8 leading-relaxed">Impress your clients and colleagues with a sophisticated setting and professional service tailored for business.</p>
@@ -44,8 +75,12 @@ const Parties: React.FC = () => {
               <li className="flex items-center"><span className="text-red-500 mr-2">✓</span> Presentation Screens</li>
               <li className="flex items-center"><span className="text-red-500 mr-2">✓</span> Multi-course Menus</li>
             </ul>
-            <button className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold">Enquire Now</button>
-          </div>
+            <button
+  onClick={() => onNavigate('contact')}
+  className="w-full py-4 bg-gray-900 text-white rounded-[15px] font-bold hover:bg-black transition-all"
+>
+  Enquire Now
+</button>             </div>
         </div>
       </section>
     </div>

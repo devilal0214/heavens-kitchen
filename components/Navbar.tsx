@@ -32,8 +32,9 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView, cartCount, onC
   ];
 
   const useGlass = isScrolled || forceGlass;
-  const linkHoverColor = useGlass ? 'hover:text-[#E31E24]' : 'hover:text-[#FFB30E]';
-  const linkBaseColor = useGlass ? 'text-gray-600' : 'text-white/80';
+  const linkHoverColor = 'hover:text-[#E31E24]';
+  const linkBaseColor = 'text-white';
+  
 
   return (
     <>

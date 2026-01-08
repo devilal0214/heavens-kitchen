@@ -109,13 +109,52 @@ const Contact: React.FC = () => {
   };
 
   return (
-    <div className="pt-28 bg-white pb-20">
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="text-center mb-16 animate-fade-up">
-          <h1 className="text-5xl md:text-7xl font-playfair mb-6 text-gray-900">Get in Touch</h1>
-          <p className="text-gray-500 text-lg italic">"Connecting you to the heart of the Havens heritage."</p>
-        </div>
+    <div className="bg-white pb-20">
 
+
+      {/* ===== MENU STYLE HERO BANNER ===== */}
+<section className="w-full relative h-[35vh] md:h-[45vh] overflow-hidden mt-[70px] md:mt-0">
+
+{/* Background Image (STATIC) */}
+<img
+  src="https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=2400&auto=format&fit=crop"
+  alt="Contact Us"
+  className="w-full h-full object-cover"
+/>
+
+{/* Black Overlay */}
+<div className="absolute inset-0 bg-black/65"></div>
+
+{/* Banner Content (TEXT ANIMATED) */}
+<div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+<div className="max-w-2xl animate-fade-down opacity-95">
+
+    <span className="inline-block px-4 py-1.5 bg-[#FFB30E] text-black text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] rounded-[15px] shadow-xl mb-4 md:mb-6">
+      Contact Us
+    </span>
+
+    <h2 className="text-4xl md:text-7xl font-playfair font-bold text-white drop-shadow-2xl leading-tight">
+      Get in <span className="italic text-[#FFB30E]">Touch</span>
+    </h2>
+
+    <div className="h-[1px] w-12 bg-white/30 mx-auto my-4 md:my-6"></div>
+
+    <p className="text-white/90 font-black uppercase tracking-[0.4em] text-[10px] md:text-xs">
+      Reservations • Events • Support
+    </p>
+
+  </div>
+</div>
+
+</section>
+{/* ===== END BANNER ===== */}
+
+
+
+
+
+      <section className="max-w-7xl mx-auto px-6 py-20">
+     
         <div className="max-w-3xl mx-auto mb-32">
           <div className="bg-gray-50 p-10 md:p-14 rounded-[50px] shadow-sm border border-gray-100 animate-fade-up">
             <h2 className="text-3xl font-playfair mb-10 text-center text-gray-900">Reservation Enquiry</h2>

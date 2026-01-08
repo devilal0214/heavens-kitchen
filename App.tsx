@@ -226,7 +226,7 @@ const App: React.FC = () => {
         )}
 
         {view === 'about' && <About />}
-        {view === 'parties' && <Parties />}
+        {view === 'parties' && <Parties onNavigate={navigate} />}
         {view === 'contact' && <Contact />}
 
         {view === 'tracking' && (
