@@ -2,7 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { FirestoreDB } from "../services/firestoreDb";
 import { Outlet } from "../types";
 
-const Contact: React.FC = () => {
+interface ContactProps {
+  selectedOutlet?: Outlet | null;
+}
+
+const Contact: React.FC<ContactProps> = ({ selectedOutlet }) => {
   const [subject, setSubject] = useState("Table Reservation");
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -25,6 +29,14 @@ const Contact: React.FC = () => {
   useEffect(() => {
     FirestoreDB.getOutlets().then(setOutlets).catch(console.error);
   }, []);
+
+  // If parent provides a preselected outlet, populate the form
+  useEffect(() => {
+    if (selectedOutlet) {
+      setFormData((prev) => ({ ...prev, outlet: selectedOutlet.id }));
+      setSubject("Table Reservation");
+    }
+  }, [selectedOutlet]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -121,57 +133,73 @@ const Contact: React.FC = () => {
 
   return (
     <div className="bg-white pb-20">
-
-
       {/* ===== MENU STYLE HERO BANNER ===== */}
-<section className="w-full relative h-[35vh] md:h-[45vh] overflow-hidden mt-[70px] md:mt-0">
+      <section className="w-full relative h-[35vh] md:h-[45vh] overflow-hidden mt-[70px] md:mt-0">
+        {/* Background Image (STATIC) */}
+        <img
+          src="https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=2400&auto=format&fit=crop"
+          alt="Contact Us"
+          className="w-full h-full object-cover"
+        />
 
-{/* Background Image (STATIC) */}
-<img
-  src="https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=2400&auto=format&fit=crop"
-  alt="Contact Us"
-  className="w-full h-full object-cover"
-/>
+        {/* Black Overlay */}
+        <div className="absolute inset-0 bg-black/65"></div>
 
-{/* Black Overlay */}
-<div className="absolute inset-0 bg-black/65"></div>
+        {/* Banner Content (TEXT ANIMATED) */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+          <div className="max-w-2xl animate-fade-down opacity-95">
+            <span className="inline-block px-4 py-1.5 bg-[#FFB30E] text-black text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] rounded-[15px] shadow-xl mb-4 md:mb-6">
+              Contact Us
+            </span>
 
-{/* Banner Content (TEXT ANIMATED) */}
-<div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-<div className="max-w-2xl animate-fade-down opacity-95">
+            <h2 className="text-4xl md:text-7xl font-playfair font-bold text-white drop-shadow-2xl leading-tight">
+              Get in <span className="italic text-[#FFB30E]">Touch</span>
+            </h2>
 
-    <span className="inline-block px-4 py-1.5 bg-[#FFB30E] text-black text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] rounded-[15px] shadow-xl mb-4 md:mb-6">
-      Contact Us
-    </span>
+            <div className="h-[1px] w-12 bg-white/30 mx-auto my-4 md:my-6"></div>
 
-    <h2 className="text-4xl md:text-7xl font-playfair font-bold text-white drop-shadow-2xl leading-tight">
-      Get in <span className="italic text-[#FFB30E]">Touch</span>
-    </h2>
-
-    <div className="h-[1px] w-12 bg-white/30 mx-auto my-4 md:my-6"></div>
-
-    <p className="text-white/90 font-black uppercase tracking-[0.4em] text-[10px] md:text-xs">
-      Reservations • Events • Support
-    </p>
-
-  </div>
-</div>
-
-</section>
-{/* ===== END BANNER ===== */}
-
-
-
-
+            <p className="text-white/90 font-black uppercase tracking-[0.4em] text-[10px] md:text-xs">
+              Reservations • Events • Support
+            </p>
+          </div>
+        </div>
+      </section>
+      {/* ===== END BANNER ===== */}
 
       <section className="max-w-7xl mx-auto px-6 py-20">
-     
         <div className="max-w-3xl mx-auto mb-32">
           <div className="bg-gray-50 p-10 md:p-14 rounded-[50px] shadow-sm border border-gray-100 animate-fade-up">
             <h2 className="text-3xl font-playfair mb-10 text-center text-gray-900">
               Reservation Enquiry
             </h2>
             <form className="space-y-6" onSubmit={handleSubmit} noValidate>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-1">
+                  Choose Sanctuary Outlet
+                </label>
+                <select
+                  value={formData.outlet}
+                  onChange={(e) =>
+                    setFormData({ ...formData, outlet: e.target.value })
+                  }
+                  className={`w-full bg-white border ${
+                    errors.outlet ? "border-red-500" : "border-gray-100"
+                  } rounded-2xl px-5 py-4 outline-none focus:ring-4 ring-red-500/5 font-bold transition-all cursor-pointer appearance-none`}
+                >
+                  <option value="">Select a Location</option>
+                  {outlets.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.outlet && (
+                  <p className="text-[9px] text-red-500 font-bold mt-1 ml-2 uppercase tracking-tighter">
+                    {errors.outlet}
+                  </p>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-1">
@@ -322,36 +350,6 @@ const Contact: React.FC = () => {
                       </p>
                     )}
                   </div>
-                </div>
-              )}
-
-              {(subject === "Table Reservation" ||
-                subject === "Event Enquiry") && (
-                <div className="animate-fade-up">
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-1">
-                    Choose Sanctuary Outlet
-                  </label>
-                  <select
-                    value={formData.outlet}
-                    onChange={(e) =>
-                      setFormData({ ...formData, outlet: e.target.value })
-                    }
-                    className={`w-full bg-white border ${
-                      errors.outlet ? "border-red-500" : "border-gray-100"
-                    } rounded-2xl px-5 py-4 outline-none focus:ring-4 ring-red-500/5 font-bold transition-all cursor-pointer appearance-none`}
-                  >
-                    <option value="">Select a Location</option>
-                    {outlets.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.outlet && (
-                    <p className="text-[9px] text-red-500 font-bold mt-1 ml-2 uppercase tracking-tighter">
-                      {errors.outlet}
-                    </p>
-                  )}
                 </div>
               )}
 

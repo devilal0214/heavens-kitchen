@@ -23,6 +23,9 @@ const CartModal: React.FC<CartModalProps> = ({
 }) => {
   const [checkoutStep, setCheckoutStep] = useState(1);
   const [settings, setSettings] = useState<GlobalSettings | null>(null);
+  const [fulfillmentType, setFulfillmentType] = useState<
+    "takeaway" | "delivery"
+  >("delivery");
 
   useEffect(() => {
     FirestoreDB.getGlobalSettings().then(setSettings).catch(console.error);
@@ -146,7 +149,14 @@ const CartModal: React.FC<CartModalProps> = ({
       setCheckoutStep(2);
     } else if (checkoutStep === 2) {
       if (validate()) {
-        onCheckout({ ...formData, subtotal, tax, deliveryCharge, total });
+        onCheckout({
+          ...formData,
+          subtotal,
+          tax,
+          deliveryCharge,
+          total,
+          fulfillmentType,
+        });
       }
     }
   };
@@ -310,6 +320,35 @@ const CartModal: React.FC<CartModalProps> = ({
                       Delivery charges will be calculated based on your address
                     </div>
                   </div>
+
+                  {/* Fulfillment Type Selection */}
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <h5 className="text-[10px] font-black uppercase text-gray-400 mb-3 tracking-widest">
+                      How would you like to receive your order?
+                    </h5>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setFulfillmentType("takeaway")}
+                        className={`py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest border-2 transition-all ${
+                          fulfillmentType === "takeaway"
+                            ? "bg-[#C0392B] text-white border-[#FFB30E]"
+                            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        🏪 TAKEAWAY
+                      </button>
+                      <button
+                        onClick={() => setFulfillmentType("delivery")}
+                        className={`py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest border-2 transition-all ${
+                          fulfillmentType === "delivery"
+                            ? "bg-[#C0392B] text-white border-[#FFB30E]"
+                            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        🚚 DELIVERY
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -317,10 +356,14 @@ const CartModal: React.FC<CartModalProps> = ({
             <div className="space-y-8 animate-fade-up">
               <div>
                 <h3 className="text-2xl font-playfair font-bold text-gray-900 mb-2">
-                  Delivery Details
+                  {fulfillmentType === "takeaway"
+                    ? "Pickup Details"
+                    : "Delivery Details"}
                 </h3>
                 <p className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">
-                  Secure Shipping Protocol
+                  {fulfillmentType === "takeaway"
+                    ? "Takeaway Protocol"
+                    : "Secure Shipping Protocol"}
                 </p>
               </div>
               <div className="space-y-4">
@@ -365,27 +408,29 @@ const CartModal: React.FC<CartModalProps> = ({
                     </p>
                   )}
                 </div>
-                <div className="group">
-                  <label className="text-[9px] font-black uppercase text-gray-400 ml-1 mb-2 block">
-                    Full Address
-                  </label>
-                  <textarea
-                    value={formData.address}
-                    onChange={(e) =>
-                      setFormData({ ...formData, address: e.target.value })
-                    }
-                    className={`w-full px-6 py-4 rounded-2xl border ${
-                      errors.address ? "border-red-500" : "border-gray-100"
-                    } bg-gray-50 outline-none font-bold text-sm focus:bg-white focus:ring-4 ring-red-50 transition-all resize-none`}
-                    placeholder="House No, Street, Landmark..."
-                    rows={3}
-                  />
-                  {errors.address && (
-                    <p className="text-[8px] text-red-500 font-bold mt-1 ml-2 uppercase">
-                      {errors.address}
-                    </p>
-                  )}
-                </div>
+                {fulfillmentType === "delivery" && (
+                  <div className="group">
+                    <label className="text-[9px] font-black uppercase text-gray-400 ml-1 mb-2 block">
+                      Full Address
+                    </label>
+                    <textarea
+                      value={formData.address}
+                      onChange={(e) =>
+                        setFormData({ ...formData, address: e.target.value })
+                      }
+                      className={`w-full px-6 py-4 rounded-2xl border ${
+                        errors.address ? "border-red-500" : "border-gray-100"
+                      } bg-gray-50 outline-none font-bold text-sm focus:bg-white focus:ring-4 ring-red-50 transition-all resize-none`}
+                      placeholder="House No, Street, Landmark..."
+                      rows={3}
+                    />
+                    {errors.address && (
+                      <p className="text-[8px] text-red-500 font-bold mt-1 ml-2 uppercase">
+                        {errors.address}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="mt-12">
@@ -432,7 +477,7 @@ const CartModal: React.FC<CartModalProps> = ({
                     </span>
                   </div>
 
-                  {distanceKm !== null && (
+                  {distanceKm !== null && fulfillmentType === "delivery" && (
                     <div className="border-t border-gray-200 pt-3">
                       <div className="flex justify-between text-sm mb-2">
                         <span className="font-bold text-gray-600">

@@ -1,40 +1,62 @@
+import React, { useState, useEffect } from "react";
+import {
+  UserRole,
+  Outlet,
+  AppState,
+  Coordinates,
+  MenuItem,
+  Order,
+  OrderStatus,
+  UserProfile,
+} from "./types";
 
-import React, { useState, useEffect } from 'react';
-import { UserRole, Outlet, AppState, Coordinates, MenuItem, Order, OrderStatus, UserProfile } from './types';
-
-import FirestoreDB from './services/firestoreDb';
-import { getUserLocation, findNearestOutlet } from './services/locationService';
+import FirestoreDB from "./services/firestoreDb";
+import { getUserLocation, findNearestOutlet } from "./services/locationService";
 
 // --- COMPONENTS ---
-import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import HomeContent from './components/HomeContent';
-import MenuPage from './components/MenuPage';
-import CartModal from './components/CartModal';
-import OrderTracking from './components/OrderTracking';
-import AdminDashboard from './components/AdminDashboard';
-import Login from './components/Login';
-import About from './components/About';
-import Parties from './components/Parties';
-import Contact from './components/Contact';
-import Footer from './components/Footer';
-import MyOrders from './components/MyOrders';
+import Navbar from "./components/Navbar";
+import Hero from "./components/Hero";
+import HomeContent from "./components/HomeContent";
+import MenuPage from "./components/MenuPage";
+import CartModal from "./components/CartModal";
+import OrderTracking from "./components/OrderTracking";
+import AdminDashboard from "./components/AdminDashboard";
+import Login from "./components/Login";
+import About from "./components/About";
+import Parties from "./components/Parties";
+import Contact from "./components/Contact";
+import Footer from "./components/Footer";
+import MyOrders from "./components/MyOrders";
 
-type ViewType = 'home' | 'menu' | 'tracking' | 'admin' | 'owner' | 'login' | 'login-staff' | 'about' | 'parties' | 'contact' | 'profile' | 'my-orders';
+type ViewType =
+  | "home"
+  | "menu"
+  | "tracking"
+  | "admin"
+  | "owner"
+  | "login"
+  | "login-staff"
+  | "about"
+  | "parties"
+  | "contact"
+  | "profile"
+  | "my-orders";
 
 const App: React.FC = () => {
-  const [view, setView] = useState<ViewType>('home');
+  const [view, setView] = useState<ViewType>("home");
   const [state, setState] = useState<AppState>({
     currentUser: null,
     staffUser: null,
     outlets: [],
     currentOutlet: null,
     userLocation: null,
-    cart: []
+    cart: [],
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
-  const [locationStatus, setLocationStatus] = useState<'detecting' | 'success' | 'failed'>('detecting');
+  const [locationStatus, setLocationStatus] = useState<
+    "detecting" | "success" | "failed"
+  >("detecting");
   const [distanceToNearest, setDistanceToNearest] = useState<number>(0);
 
   useEffect(() => {
@@ -42,38 +64,46 @@ const App: React.FC = () => {
       try {
         const [loc, outlets] = await Promise.all([
           getUserLocation(),
-          FirestoreDB.getOutlets()
+          FirestoreDB.getOutlets(),
         ]);
-        
+
         if (outlets.length === 0) {
-          console.warn('No outlets found in database');
-          setLocationStatus('failed');
+          console.warn("No outlets found in database");
+          setLocationStatus("failed");
           return;
         }
-        
+
         const result = findNearestOutlet(loc, outlets);
-        
+
         if (result) {
-          setState(prev => ({
+          setState((prev) => ({
             ...prev,
             userLocation: loc,
             outlets: outlets,
-            currentOutlet: result.outlet
+            currentOutlet: result.outlet,
           }));
           setDistanceToNearest(result.distance);
-          setLocationStatus('success');
+          setLocationStatus("success");
         } else {
-          setState(prev => ({ ...prev, outlets: outlets, currentOutlet: outlets[0] }));
-          setLocationStatus('failed');
+          setState((prev) => ({
+            ...prev,
+            outlets: outlets,
+            currentOutlet: outlets[0],
+          }));
+          setLocationStatus("failed");
         }
       } catch (err) {
         console.error("Location detection failed:", err);
-        setLocationStatus('failed');
+        setLocationStatus("failed");
         try {
           const outlets = await FirestoreDB.getOutlets();
-          setState(prev => ({ ...prev, outlets: outlets, currentOutlet: outlets[0] || null }));
+          setState((prev) => ({
+            ...prev,
+            outlets: outlets,
+            currentOutlet: outlets[0] || null,
+          }));
         } catch (dbErr) {
-          console.error('Failed to load outlets:', dbErr);
+          console.error("Failed to load outlets:", dbErr);
         }
       }
     };
@@ -81,52 +111,67 @@ const App: React.FC = () => {
   }, []);
 
   const handleSelectOutlet = (outlet: Outlet) => {
-    setState(prev => ({ ...prev, currentOutlet: outlet }));
-    setView('menu');
-    window.scrollTo(0, 0);
+    setState((prev) => ({ ...prev, currentOutlet: outlet }));
+    // setView('menu'); // Commented out to stop auto-navigation
   };
 
-  const addToCart = (item: MenuItem, variant: 'full' | 'half' | 'qtr') => {
+  const addToCart = (item: MenuItem, variant: "full" | "half" | "qtr") => {
     const price = item.price[variant] || item.price.full;
-    setState(prev => {
-      const existing = prev.cart.find(c => c.menuItemId === item.id && c.variant === variant);
+    setState((prev) => {
+      const existing = prev.cart.find(
+        (c) => c.menuItemId === item.id && c.variant === variant
+      );
       if (existing) {
         return {
           ...prev,
-          cart: prev.cart.map(c => 
-            (c.menuItemId === item.id && c.variant === variant) 
-              ? { ...c, quantity: c.quantity + 1 } 
+          cart: prev.cart.map((c) =>
+            c.menuItemId === item.id && c.variant === variant
+              ? { ...c, quantity: c.quantity + 1 }
               : c
-          )
+          ),
         };
       }
       return {
         ...prev,
-        cart: [...prev.cart, { menuItemId: item.id, name: item.name, variant, price, quantity: 1 }]
+        cart: [
+          ...prev.cart,
+          { menuItemId: item.id, name: item.name, variant, price, quantity: 1 },
+        ],
       };
     });
   };
 
   const updateCartQty = (id: string, variant: string, delta: number) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      cart: prev.cart.map(c => {
-        if (c.menuItemId === id && c.variant === variant) {
-          const newQty = Math.max(0, c.quantity + delta);
-          return { ...c, quantity: newQty };
-        }
-        return c;
-      }).filter(c => c.quantity > 0)
+      cart: prev.cart
+        .map((c) => {
+          if (c.menuItemId === id && c.variant === variant) {
+            const newQty = Math.max(0, c.quantity + delta);
+            return { ...c, quantity: newQty };
+          }
+          return c;
+        })
+        .filter((c) => c.quantity > 0),
     }));
   };
 
-  const placeOrder = (details: { name: string; phone: string; address: string; payment: 'UPI' | 'CARD' | 'COD'; subtotal: number; tax: number; deliveryCharge: number; total: number }) => {
+  const placeOrder = (details: {
+    name: string;
+    phone: string;
+    address: string;
+    payment: "UPI" | "CARD" | "COD";
+    subtotal: number;
+    tax: number;
+    deliveryCharge: number;
+    total: number;
+  }) => {
     if (!state.currentOutlet) return;
-    
+
     const newOrder: Order = {
       id: `ord-${Date.now()}`,
       outletId: state.currentOutlet.id,
-      customerId: state.currentUser?.id || `guest-${Date.now()}`, 
+      customerId: state.currentUser?.id || `guest-${Date.now()}`,
       customerName: details.name,
       customerPhone: details.phone,
       address: details.address,
@@ -138,42 +183,44 @@ const App: React.FC = () => {
       status: OrderStatus.PENDING,
       timestamp: Date.now(),
       paymentMethod: details.payment,
-      history: [{ status: OrderStatus.PENDING, time: Date.now(), updatedBy: 'System' }]
+      history: [
+        { status: OrderStatus.PENDING, time: Date.now(), updatedBy: "System" },
+      ],
     };
 
     FirestoreDB.createOrder(newOrder)
       .then((orderId) => {
         setActiveOrderId(orderId);
-        setState(prev => ({ ...prev, cart: [] }));
+        setState((prev) => ({ ...prev, cart: [] }));
         setIsCartOpen(false);
-        setView('tracking');
+        setView("tracking");
         window.scrollTo(0, 0);
       })
       .catch((error) => {
-        console.error('Error placing order:', error);
-        alert('Failed to place order. Please try again.');
+        console.error("Error placing order:", error);
+        alert("Failed to place order. Please try again.");
       });
   };
 
   const handleLogin = (user: UserProfile) => {
-    if (view === 'login-staff') {
-      setState(prev => ({ ...prev, staffUser: user }));
-      setView('admin');
+    if (view === "login-staff") {
+      setState((prev) => ({ ...prev, staffUser: user }));
+      setView("admin");
     } else {
-      setState(prev => ({ ...prev, currentUser: user }));
-      setView('home');
+      setState((prev) => ({ ...prev, currentUser: user }));
+      setView("home");
     }
     window.scrollTo(0, 0);
   };
 
   const handleLogout = () => {
-    setState(prev => ({ ...prev, currentUser: null }));
-    setView('home');
+    setState((prev) => ({ ...prev, currentUser: null }));
+    setView("home");
   };
 
   const handleStaffLogout = () => {
-    setState(prev => ({ ...prev, staffUser: null }));
-    setView('login-staff');
+    setState((prev) => ({ ...prev, staffUser: null }));
+    setView("login-staff");
   };
 
   const navigate = (v: ViewType) => {
@@ -183,41 +230,42 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden flex flex-col">
-      <Navbar 
-        onNavigate={navigate} 
-        currentView={view} 
+      <Navbar
+        onNavigate={navigate}
+        currentView={view}
         cartCount={state.cart.reduce((a, b) => a + b.quantity, 0)}
         onCartOpen={() => setIsCartOpen(true)}
         user={state.currentUser}
         onLogout={handleLogout}
-        forceGlass={view !== 'home'}
+        forceGlass={view !== "home"}
       />
 
       <main className="flex-grow">
-        {view === 'home' && (
+        {view === "home" && (
           <>
-            <Hero 
-              outlets={state.outlets} 
+            <Hero
+              outlets={state.outlets}
               onSelectOutlet={handleSelectOutlet}
+              onNavigate={navigate}
               userLocation={state.userLocation}
               locationStatus={locationStatus}
               distanceToNearest={distanceToNearest}
             />
-            <HomeContent 
-              onExploreMenu={() => navigate('menu')} 
-              onAddToCart={addToCart} 
+            <HomeContent
+              onExploreMenu={() => navigate("menu")}
+              onAddToCart={addToCart}
               onUpdateQty={updateCartQty}
               cart={state.cart}
-              user={state.currentUser} 
+              user={state.currentUser}
             />
           </>
         )}
 
-        {view === 'menu' && state.currentOutlet && (
-          <MenuPage 
-            outlet={state.currentOutlet} 
+        {view === "menu" && state.currentOutlet && (
+          <MenuPage
+            outlet={state.currentOutlet}
             outlets={state.outlets}
-            onAddToCart={addToCart} 
+            onAddToCart={addToCart}
             onUpdateQty={updateCartQty}
             cart={state.cart}
             onSelectOutlet={handleSelectOutlet}
@@ -225,53 +273,76 @@ const App: React.FC = () => {
           />
         )}
 
-        {view === 'about' && <About />}
-        {view === 'parties' && <Parties onNavigate={navigate} />}
-        {view === 'contact' && <Contact />}
+        {view === "about" && <About />}
+        {view === "parties" && <Parties onNavigate={navigate} />}
+        {view === "contact" && <Contact selectedOutlet={state.currentOutlet} />}
 
-        {view === 'tracking' && (
-          <OrderTracking 
-            orderId={activeOrderId} 
-            user={state.currentUser} 
-            onGoToLogin={() => navigate('login')}
+        {view === "tracking" && (
+          <OrderTracking
+            orderId={activeOrderId}
+            user={state.currentUser}
+            onGoToLogin={() => navigate("login")}
           />
         )}
 
-        {view === 'my-orders' && state.currentUser && (
-          <MyOrders 
-            user={state.currentUser} 
-            onTrackOrder={(id) => { setActiveOrderId(id); navigate('tracking'); }}
+        {view === "my-orders" && state.currentUser && (
+          <MyOrders
+            user={state.currentUser}
+            onTrackOrder={(id) => {
+              setActiveOrderId(id);
+              navigate("tracking");
+            }}
           />
         )}
 
-        {view === 'admin' && state.staffUser && (
-          <AdminDashboard user={state.staffUser} onBack={() => setView('home')} onLogout={handleStaffLogout} />
+        {view === "admin" && state.staffUser && (
+          <AdminDashboard
+            user={state.staffUser}
+            onBack={() => setView("home")}
+            onLogout={handleStaffLogout}
+          />
         )}
 
-        {(view === 'login' || view === 'login-staff') && (
-          <Login onLogin={handleLogin} onBackToHome={() => navigate('home')} initialIsStaff={view === 'login-staff'} />
+        {(view === "login" || view === "login-staff") && (
+          <Login
+            onLogin={handleLogin}
+            onBackToHome={() => navigate("home")}
+            initialIsStaff={view === "login-staff"}
+          />
         )}
-        
-        {view === 'profile' && state.currentUser && (
+
+        {view === "profile" && state.currentUser && (
           <div className="pt-40 pb-20 px-6 max-w-2xl mx-auto">
             <div className="bg-white p-12 rounded-[50px] shadow-2xl border border-gray-100 animate-fade-up">
-              <h2 className="text-4xl font-playfair font-bold mb-8">Your Profile</h2>
+              <h2 className="text-4xl font-playfair font-bold mb-8">
+                Your Profile
+              </h2>
               <div className="space-y-6">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Name</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">
+                    Name
+                  </p>
                   <p className="text-xl font-bold">{state.currentUser.name}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Email</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">
+                    Email
+                  </p>
                   <p className="text-xl font-bold">{state.currentUser.email}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Phone</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">
+                    Phone
+                  </p>
                   <p className="text-xl font-bold">{state.currentUser.phone}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Delivery Address</p>
-                  <p className="text-lg text-gray-600 italic">"{state.currentUser.address || 'No address saved yet.'}"</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">
+                    Delivery Address
+                  </p>
+                  <p className="text-lg text-gray-600 italic">
+                    "{state.currentUser.address || "No address saved yet."}"
+                  </p>
                 </div>
               </div>
             </div>
@@ -279,29 +350,41 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {view !== 'admin' && view !== 'login' && view !== 'login-staff' && (
+      {view !== "admin" && view !== "login" && view !== "login-staff" && (
         <Footer onNavigate={navigate} staffUser={state.staffUser} />
       )}
 
-      <CartModal 
-        isOpen={isCartOpen} 
-        onClose={() => setIsCartOpen(false)} 
+      <CartModal
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
         items={state.cart}
         onUpdateQty={updateCartQty}
         onCheckout={placeOrder}
         initialUser={state.currentUser}
         currentOutlet={state.currentOutlet}
       />
-      
-      {state.cart.length > 0 && (view === 'menu' || view === 'home') && (
-        <button 
+
+      {state.cart.length > 0 && (view === "menu" || view === "home") && (
+        <button
           onClick={() => setIsCartOpen(true)}
           className="fixed bottom-8 right-8 z-40 bg-[#C0392B] text-white p-4 rounded-full shadow-2xl flex items-center space-x-2 transition-transform hover:scale-110 active:scale-95 animate-bounce"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+            />
           </svg>
-          <span className="font-bold">{state.cart.reduce((a,b) => a+b.quantity, 0)} Items</span>
+          <span className="font-bold">
+            {state.cart.reduce((a, b) => a + b.quantity, 0)} Items
+          </span>
         </button>
       )}
     </div>

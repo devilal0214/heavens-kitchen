@@ -122,6 +122,7 @@ export interface MenuItem {
   foodType: "Veg" | "Non-Veg";
   inventoryItems: { itemId: string; qty: number }[];
   discountPercentage?: number;
+  isSignature?: boolean;
 }
 
 export interface VariantPrices {

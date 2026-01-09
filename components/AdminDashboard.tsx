@@ -168,6 +168,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [billingCategoryFilter, setBillingCategoryFilter] =
     useState<string>("all");
 
+  // search filters
+  const [menuSearch, setMenuSearch] = useState("");
+  const [inventorySearch, setInventorySearch] = useState("");
+  const [outletSearch, setOutletSearch] = useState("");
+  const [historySearch, setHistorySearch] = useState("");
+  const [usersSearch, setUsersSearch] = useState("");
+  const [billingSearch, setBillingSearch] = useState("");
+
   // modals
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -206,6 +214,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     outletId: user.outletId || "outlet-1",
     discount: "0",
     isAvailable: true,
+    isSignature: false,
     inventoryItems: [] as { itemId: string; qty: number }[],
   });
 
@@ -428,15 +437,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleSaveMenu = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const isNewItem = !editingMenuId;
+      const itemId = editingMenuId || `item-${Date.now()}`;
       const item: MenuItem = {
-        id: editingMenuId || `item-${Date.now()}`,
+        id: itemId,
         outletId: formItem.outletId,
         name: formItem.name,
         description: formItem.description,
         category: formItem.category,
         price: {
           full: Number(formItem.fullPrice),
-          half: formItem.halfPrice ? Number(formItem.halfPrice) : undefined,
+          half: formItem.halfPrice ? Number(formItem.fullPrice) : undefined,
           qtr: formItem.qtrPrice ? Number(formItem.qtrPrice) : undefined,
         },
         variantQuantities: {
@@ -455,15 +466,45 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         foodType: formItem.foodType === "Veg" ? "Veg" : "Non-Veg",
         inventoryItems: formItem.inventoryItems || [],
         discountPercentage: Number(formItem.discount || 0),
+        isSignature: formItem.isSignature,
       };
 
       await FirestoreDB.saveMenuItem(item);
+
+      // Auto-create inventory item for new menu items
+      if (isNewItem) {
+        try {
+          const inventoryItem: InventoryItem = {
+            id: `inv-${itemId}`,
+            outletId: formItem.outletId,
+            name: formItem.name,
+            stock: 100,
+            minStock: 5,
+            unit: "Portions",
+            imageUrl: formItem.imageUrl,
+          };
+          await FirestoreDB.saveInventoryItem(inventoryItem);
+          console.log("✅ Inventory item created automatically");
+        } catch (invError) {
+          console.error("Error creating inventory:", invError);
+          alert(
+            "Menu saved but inventory creation failed. Please create inventory manually."
+          );
+        }
+      }
+
       setIsMenuModalOpen(false);
 
       const fresh = await FirestoreDB.getMenu(
         selectedOutlet === "all" ? undefined : selectedOutlet
       );
       setMenu(fresh || []);
+
+      // Also refresh inventory list
+      const freshInventory = await FirestoreDB.getInventory(
+        selectedOutlet === "all" ? undefined : selectedOutlet
+      );
+      setInventory(freshInventory || []);
     } catch (e) {
       console.error(e);
       alert("Saving menu failed.");
@@ -882,6 +923,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               menu={menu}
               outlets={outlets}
               categories={categories}
+              setCategories={setCategories}
+              search={menuSearch}
+              setSearch={setMenuSearch}
               onAdd={() => {
                 if (selectedOutlet === "all" && outlets.length === 0) {
                   alert("No outlets available. Please add an outlet first.");
@@ -902,12 +946,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   fullServes: "",
                   halfServes: "",
                   qtrServes: "",
-                  outletId:
-                    selectedOutlet === "all"
-                      ? outlets[0]?.id || ""
-                      : selectedOutlet,
+                  outletId: "all",
                   discount: "0",
                   isAvailable: true,
+                  isSignature: false,
                   inventoryItems: [],
                 }));
                 setIsMenuModalOpen(true);
@@ -933,6 +975,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   outletId: item.outletId,
                   discount: String(item.discountPercentage || 0),
                   isAvailable: item.isAvailable ?? true,
+                  isSignature: item.isSignature ?? false,
                   inventoryItems: (item.inventoryItems || []) as any,
                 });
                 setIsMenuModalOpen(true);
@@ -954,6 +997,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               selectedOutlet={selectedOutlet}
               inventory={inventory}
               outlets={outlets}
+              search={inventorySearch}
+              setSearch={setInventorySearch}
               onAdd={() => {
                 if (selectedOutlet === "all" && outlets.length === 0) {
                   alert("No outlets available. Please add an outlet first.");
@@ -1000,6 +1045,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <OutletTab
               user={user}
               outlets={outlets}
+              search={outletSearch}
+              setSearch={setOutletSearch}
               onAdd={() => {
                 setEditingOutletId(null);
                 setOutletForm({
@@ -1056,6 +1103,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               setHistoryPage={setHistoryPage}
               historyDateFilter={historyDateFilter}
               setHistoryDateFilter={setHistoryDateFilter}
+              search={historySearch}
+              setSearch={setHistorySearch}
             />
           )}
 
@@ -1064,6 +1113,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               user={user}
               outlets={outlets}
               staffUsers={filteredStaff}
+              search={usersSearch}
+              setSearch={setUsersSearch}
               onAdd={() => {
                 setEditingUserId(null);
                 setUserForm({
@@ -1138,9 +1189,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               billingPage={billingPage}
               setBillingPage={setBillingPage}
               billingDateFilter={billingDateFilter}
-              setBillingDateFilter={setBillingDateFilter}
+              setBillingDateFilter={setHistoryDateFilter}
               billingCategoryFilter={billingCategoryFilter}
               setBillingCategoryFilter={setBillingCategoryFilter}
+              search={billingSearch}
+              setSearch={setBillingSearch}
               onCreateManualInvoice={() => setIsManualInvoiceModalOpen(true)}
             />
           )}
@@ -1441,6 +1494,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </label>
               </div>
 
+              <div className="md:col-span-2 pt-4">
+                <label className="flex items-center justify-between p-6 bg-gray-50 rounded-[15px]">
+                  <span className="text-xs font-medium uppercase tracking-widest text-gray-400">
+                    Signature Selection (Show on Home Page)
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={formItem.isSignature}
+                    onChange={(e) =>
+                      setFormItem({
+                        ...formItem,
+                        isSignature: e.target.checked,
+                      })
+                    }
+                    className="w-6 h-6 accent-[#C0392B]"
+                  />
+                </label>
+              </div>
+
               {/* Inventory links */}
               <div className="md:col-span-2">
                 <p className="text-[10px] font-medium uppercase text-gray-400 mb-3 tracking-widest">
@@ -1584,7 +1656,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onSubmit={handleSaveOutlet}
             className="relative w-full max-w-2xl bg-white rounded-[15px] p-12 animate-fade-up border border-gray-100 max-h-[90vh] overflow-y-auto no-scrollbar"
           >
-            <h3 className="text-3xl font-playfair font-semibold mb-8">Outlet</h3>
+            <h3 className="text-3xl font-playfair font-semibold mb-8">
+              Outlet
+            </h3>
 
             <div className="space-y-6 mb-10">
               <Input
@@ -1649,7 +1723,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   }
                   className="w-5 h-5 accent-[#C0392B]"
                 />
-                <span className="text-sm font-semibold text-gray-700">Active</span>
+                <span className="text-sm font-semibold text-gray-700">
+                  Active
+                </span>
               </div>
             </div>
 
@@ -1678,7 +1754,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onSubmit={handleSaveInventory}
             className="relative w-full max-w-xl bg-white rounded-[15px] p-12 animate-fade-up border border-gray-100"
           >
-            <h3 className="text-3xl font-playfair font-semibold mb-8">Inventory</h3>
+            <h3 className="text-3xl font-playfair font-semibold mb-8">
+              Inventory
+            </h3>
 
             <div className="space-y-6 mb-10">
               <Input
@@ -2192,6 +2270,9 @@ const MenuTab: React.FC<any> = ({
   menu,
   outlets,
   categories,
+  setCategories,
+  search,
+  setSearch,
   onAdd,
   onEdit,
   onDelete,
@@ -2200,6 +2281,19 @@ const MenuTab: React.FC<any> = ({
   const sorted = useMemo(
     () => [...menu].sort((a, b) => b.id.localeCompare(a.id)),
     [menu]
+  );
+
+  const filtered = useMemo(
+    () =>
+      sorted.filter((item) => {
+        const query = search.toLowerCase();
+        return (
+          item.name.toLowerCase().includes(query) ||
+          item.description.toLowerCase().includes(query) ||
+          item.category.toLowerCase().includes(query)
+        );
+      }),
+    [sorted, search]
   );
 
   return (
@@ -2214,24 +2308,77 @@ const MenuTab: React.FC<any> = ({
           </p>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <input
+            type="text"
+            placeholder="Item name or category"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="px-6 py-3 border border-gray-100 rounded-[15px] outline-none focus:border-red-100 focus:ring-4 ring-red-50 text-sm"
+          />
           <button
             onClick={onAddCategory}
-            className="px-8 py-3 border-2 border-gray-100 rounded-[15px] font-medium uppercase text-[10px] text-gray-400 hover:bg-gray-50 transition-all tracking-widest"
+            className="px-8 py-3 border-2 border-gray-100 rounded-[15px] font-medium uppercase text-[10px] text-gray-400 hover:bg-gray-50 transition-all tracking-widest whitespace-nowrap"
           >
             + Category
           </button>
           <button
             onClick={onAdd}
-            className="bg-[#C0392B] text-white px-10 py-3 rounded-[15px] font-medium uppercase text-[10px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest"
+            className="bg-[#C0392B] text-white px-10 py-3 rounded-[15px] font-medium uppercase text-[10px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest whitespace-nowrap"
           >
             + New Item
           </button>
         </div>
       </div>
 
+      {/* Categories Section */}
+      {categories.length > 0 && (
+        <div className="mb-12 p-8 bg-gray-50 rounded-[15px] border border-gray-100">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">
+            Categories
+          </h4>
+          <div className="flex flex-wrap gap-3">
+            {categories.map((cat) => (
+              <div
+                key={cat}
+                className="flex items-center gap-2 bg-white px-4 py-2 rounded-[15px] border border-gray-100 shadow-sm"
+              >
+                <span className="text-sm font-medium text-gray-900">{cat}</span>
+                <button
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `Delete category "${cat}"? Items in this category won't be deleted.`
+                      )
+                    ) {
+                      setCategories((p) => p.filter((c) => c !== cat));
+                    }
+                  }}
+                  className="ml-2 text-gray-400 hover:text-red-500 transition-colors"
+                  title="Delete category"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-        {sorted
+        {filtered
           .filter(
             (m: any) =>
               selectedOutlet === "all" ||
@@ -2303,154 +2450,199 @@ const InventoryTab: React.FC<any> = ({
   selectedOutlet,
   inventory,
   outlets,
+  search,
+  setSearch,
   onAdd,
   onEdit,
   onDelete,
-}) => (
-  <div className="bg-white rounded-[15px] p-10 md:p-14 border border-gray-100 shadow-sm">
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
-      <div>
-        <h3 className="text-4xl font-playfair font-semibold text-gray-800">
-          Inventory
-        </h3>
-        <p className="text-[10px] font-medium uppercase text-[#C0392B] tracking-[0.3em] mt-2">
-          Stock Monitor
-        </p>
-      </div>
-      <button
-        onClick={onAdd}
-        className="bg-[#C0392B] text-white px-10 py-4 rounded-[15px] font-medium uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest"
-      >
-        + Add Inventory
-      </button>
-    </div>
+}) => {
+  const filtered = useMemo(
+    () =>
+      inventory.filter((item: InventoryItem) =>
+        item.name.toLowerCase().includes(search.toLowerCase())
+      ),
+    [inventory, search]
+  );
 
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-      {inventory
-        .filter(
-          (i: any) =>
-            selectedOutlet === "all" ||
-            i.outletId === selectedOutlet ||
-            i.outletId === "all"
-        )
-        .map((item: InventoryItem) => (
-          <div
-            key={item.id}
-            className="relative bg-white rounded-[15px] p-10 border border-gray-100 shadow-sm hover:shadow-2xl transition-all"
-          >
-            <button
-              onClick={() => onDelete(item.id)}
-              className="absolute top-4 right-4 w-10 h-10 bg-black/60 backdrop-blur-md text-white rounded-[15px] flex items-center justify-center hover:bg-red-500"
-              title="Delete"
-            >
-              <FaTrash />
-            </button>
-
-            <h4 className="text-2xl font-playfair font-semibold text-gray-800 mb-2">
-              {item.name}
-            </h4>
-            <p className="text-[8px] font-medium uppercase text-gray-300 tracking-widest mb-8">
-              {item.outletId === "all"
-                ? "All Outlets"
-                : outlets.find((o: any) => o.id === item.outletId)?.name || ""}
-            </p>
-
-            <div className="flex items-center justify-between mb-8">
-              <span className="text-4xl font-inter font-medium text-gray-900 tabular-nums">
-                {item.stock}
-              </span>
-              <button
-                onClick={() => onEdit(item)}
-                className="px-5 py-2.5 bg-gray-50 hover:bg-red-50 text-[10px] font-medium uppercase text-[#C0392B] rounded-[15px] shadow-sm transition-all tracking-widest"
-              >
-                Edit
-              </button>
-            </div>
-          </div>
-        ))}
-    </div>
-  </div>
-);
-
-const OutletTab: React.FC<any> = ({
-  user,
-  outlets,
-  onAdd,
-  onEdit,
-  onDelete,
-}) => (
-  <div className="bg-white rounded-[15px] p-10 md:p-14 border border-gray-100 shadow-sm">
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
-      <div>
-        <h3 className="text-4xl font-playfair font-semibold text-gray-800">
-          Outlets
-        </h3>
-        <p className="text-[10px] font-medium uppercase text-[#C0392B] tracking-[0.3em] mt-2">
-          Outlet Management
-        </p>
-      </div>
-      <button
-        onClick={onAdd}
-        className="bg-[#C0392B] text-white px-10 py-4 rounded-[15px] font-medium uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest"
-      >
-        + Add Outlet
-      </button>
-    </div>
-
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-      {outlets.map((o: Outlet) => (
-        <div
-          key={o.id}
-          className="bg-white border border-gray-100 rounded-[15px] p-4 hover:shadow-2xl transition-all"
-        >
-          <div className="aspect-video mb-6 overflow-hidden rounded-[15px] shadow-sm bg-gray-50 relative">
-            <img
-              src={o.imageUrl}
-              className="w-full h-full object-cover hover:scale-110 transition-transform duration-1000"
-            />
-            <div className="absolute top-4 left-4">
-              <span
-                className={`px-4 py-1 rounded-[15px] text-[8px] font-medium uppercase tracking-widest ${
-                  (o as any).isActive
-                    ? "bg-emerald-500 text-white"
-                    : "bg-gray-400 text-white"
-                }`}
-              >
-                {(o as any).isActive ? "Active" : "Closed"}
-              </span>
-            </div>
-          </div>
-
-          <h4 className="text-2xl font-semibold font-playfair text-gray-900 mb-2">
-            {o.name}
-          </h4>
-          <p className="text-[10px] font-medium uppercase text-gray-300 tracking-widest mb-6 truncate">
-            {o.address}
+  return (
+    <div className="bg-white rounded-[15px] p-10 md:p-14 border border-gray-100 shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
+        <div>
+          <h3 className="text-4xl font-playfair font-semibold text-gray-800">
+            Inventory
+          </h3>
+          <p className="text-[10px] font-medium uppercase text-[#C0392B] tracking-[0.3em] mt-2">
+            Stock Monitor
           </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <input
+            type="text"
+            placeholder="Search by name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="px-6 py-3 border border-gray-100 rounded-[15px] outline-none focus:border-red-100 focus:ring-4 ring-red-50 text-sm"
+          />
+        </div>
+        <button
+          onClick={onAdd}
+          className="bg-[#C0392B] text-white px-10 py-4 rounded-[15px] font-medium uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest whitespace-nowrap"
+        >
+          + Add Inventory
+        </button>
+      </div>
 
-          <div className="flex gap-4 pt-6 border-t border-gray-50">
-            <button
-              onClick={() => onEdit(o)}
-              className="flex-1 py-3 bg-gray-50 text-gray-400 rounded-[15px] text-[10px] font-medium uppercase hover:bg-gray-900 hover:text-white transition-all"
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        {filtered
+          .filter(
+            (i: any) =>
+              selectedOutlet === "all" ||
+              i.outletId === selectedOutlet ||
+              i.outletId === "all"
+          )
+          .map((item: InventoryItem) => (
+            <div
+              key={item.id}
+              className="relative bg-white rounded-[15px] p-10 border border-gray-100 shadow-sm hover:shadow-2xl transition-all"
             >
-              Edit
-            </button>
-
-            {user.role === UserRole.SUPER_ADMIN && (
               <button
-                onClick={() => onDelete(o.id)}
-                className="top-4 right-4 w-10 h-10 bg-black/60 backdrop-blur-md text-white rounded-[15px] flex items-center justify-center hover:bg-red-500"
+                onClick={() => onDelete(item.id)}
+                className="absolute top-4 right-4 w-10 h-10 bg-black/60 backdrop-blur-md text-white rounded-[15px] flex items-center justify-center hover:bg-red-500"
                 title="Delete"
               >
                 <FaTrash />
               </button>
-            )}
-          </div>
-        </div>
-      ))}
+
+              <h4 className="text-2xl font-playfair font-semibold text-gray-800 mb-2">
+                {item.name}
+              </h4>
+              <p className="text-[8px] font-medium uppercase text-gray-300 tracking-widest mb-8">
+                {item.outletId === "all"
+                  ? "All Outlets"
+                  : outlets.find((o: any) => o.id === item.outletId)?.name ||
+                    ""}
+              </p>
+
+              <div className="flex items-center justify-between mb-8">
+                <span className="text-4xl font-inter font-medium text-gray-900 tabular-nums">
+                  {item.stock}
+                </span>
+                <button
+                  onClick={() => onEdit(item)}
+                  className="px-5 py-2.5 bg-gray-50 hover:bg-red-50 text-[10px] font-medium uppercase text-[#C0392B] rounded-[15px] shadow-sm transition-all tracking-widest"
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+          ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
+const OutletTab: React.FC<any> = ({
+  user,
+  outlets,
+  search,
+  setSearch,
+  onAdd,
+  onEdit,
+  onDelete,
+}) => {
+  const filtered = useMemo(
+    () =>
+      outlets.filter(
+        (o: Outlet) =>
+          o.name.toLowerCase().includes(search.toLowerCase()) ||
+          o.address.toLowerCase().includes(search.toLowerCase())
+      ),
+    [outlets, search]
+  );
+
+  return (
+    <div className="bg-white rounded-[15px] p-10 md:p-14 border border-gray-100 shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
+        <div>
+          <h3 className="text-4xl font-playfair font-semibold text-gray-800">
+            Outlets
+          </h3>
+          <p className="text-[10px] font-medium uppercase text-[#C0392B] tracking-[0.3em] mt-2">
+            Outlet Management
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <input
+            type="text"
+            placeholder="Search by name"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="px-6 py-3 border border-gray-100 rounded-[15px] outline-none focus:border-red-100 focus:ring-4 ring-red-50 text-sm"
+          />
+          <button
+            onClick={onAdd}
+            className="bg-[#C0392B] text-white px-10 py-4 rounded-[15px] font-medium uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all tracking-widest whitespace-nowrap"
+          >
+            + Add Outlet
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        {filtered.map((o: Outlet) => (
+          <div
+            key={o.id}
+            className="bg-white border border-gray-100 rounded-[15px] p-4 hover:shadow-2xl transition-all"
+          >
+            <div className="aspect-video mb-6 overflow-hidden rounded-[15px] shadow-sm bg-gray-50 relative">
+              <img
+                src={o.imageUrl}
+                className="w-full h-full object-cover hover:scale-110 transition-transform duration-1000"
+              />
+              <div className="absolute top-4 left-4">
+                <span
+                  className={`px-4 py-1 rounded-[15px] text-[8px] font-medium uppercase tracking-widest ${
+                    (o as any).isActive
+                      ? "bg-emerald-500 text-white"
+                      : "bg-gray-400 text-white"
+                  }`}
+                >
+                  {(o as any).isActive ? "Active" : "Closed"}
+                </span>
+              </div>
+            </div>
+
+            <h4 className="text-2xl font-semibold font-playfair text-gray-900 mb-2">
+              {o.name}
+            </h4>
+            <p className="text-[10px] font-medium uppercase text-gray-300 tracking-widest mb-6 truncate">
+              {o.address}
+            </p>
+
+            <div className="flex gap-4 pt-6 border-t border-gray-50">
+              <button
+                onClick={() => onEdit(o)}
+                className="flex-1 py-3 bg-gray-50 text-gray-400 rounded-[15px] text-[10px] font-medium uppercase hover:bg-gray-900 hover:text-white transition-all"
+              >
+                Edit
+              </button>
+
+              {user.role === UserRole.SUPER_ADMIN && (
+                <button
+                  onClick={() => onDelete(o.id)}
+                  className="top-4 right-4 w-10 h-10 bg-black/60 backdrop-blur-md text-white rounded-[15px] flex items-center justify-center hover:bg-red-500"
+                  title="Delete"
+                >
+                  <FaTrash />
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const HistoryTab: React.FC<{
   selectedOutlet: string;
@@ -2459,6 +2651,8 @@ const HistoryTab: React.FC<{
   setHistoryPage: (page: number) => void;
   historyDateFilter: string;
   setHistoryDateFilter: (date: string) => void;
+  search: string;
+  setSearch: (search: string) => void;
 }> = ({
   selectedOutlet,
   orders,
@@ -2466,8 +2660,10 @@ const HistoryTab: React.FC<{
   setHistoryPage,
   historyDateFilter,
   setHistoryDateFilter,
+  search,
+  setSearch,
 }) => {
-  const filteredOrders = orders
+  const sorted = orders
     .filter(
       (o: any) =>
         o.status === OrderStatus.DELIVERED || o.status === OrderStatus.REJECTED
@@ -2482,6 +2678,21 @@ const HistoryTab: React.FC<{
       return orderDate === filterDate;
     })
     .sort((a: any, b: any) => Number(b.timestamp) - Number(a.timestamp));
+
+  const filtered = useMemo(
+    () =>
+      sorted.filter((order: any) => {
+        const query = search.toLowerCase();
+        return (
+          order.customerName.toLowerCase().includes(query) ||
+          order.id.toLowerCase().includes(query) ||
+          order.paymentMethod.toLowerCase().includes(query)
+        );
+      }),
+    [sorted, search]
+  );
+
+  const filteredOrders = filtered;
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
@@ -2503,6 +2714,13 @@ const HistoryTab: React.FC<{
           Order History
         </h3>
         <div className="flex gap-4 items-center">
+          <input
+            type="text"
+            placeholder="customer name"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-gray-50 border border-gray-100 rounded-[15px] px-5 py-2 text-sm font-semibold shadow-sm outline-none"
+          />
           <input
             type="date"
             value={historyDateFilter}
@@ -2585,6 +2803,8 @@ const BillingTab: React.FC<{
   billingCategoryFilter: string;
   setBillingCategoryFilter: (filter: string) => void;
   onCreateManualInvoice: () => void;
+  search: string;
+  setSearch: (search: string) => void;
 }> = ({
   selectedOutlet,
   orders,
@@ -2598,13 +2818,15 @@ const BillingTab: React.FC<{
   billingCategoryFilter,
   setBillingCategoryFilter,
   onCreateManualInvoice,
+  search,
+  setSearch,
 }) => {
   const allInvoices = [
     ...orders.map((o: any) => ({ ...o, type: "AUTO" })),
     ...manualInvoices.map((i: any) => ({ ...i, type: "MANUAL" })),
   ];
 
-  const filteredInvoices = allInvoices
+  const sorted = allInvoices
     .filter((i) => selectedOutlet === "all" || i.outletId === selectedOutlet)
     .filter((i) => {
       if (!billingDateFilter) return true;
@@ -2617,6 +2839,21 @@ const BillingTab: React.FC<{
       return i.type === billingCategoryFilter;
     })
     .sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
+
+  const filtered = useMemo(
+    () =>
+      sorted.filter((inv: any) => {
+        const query = search.toLowerCase();
+        return (
+          inv.customerName.toLowerCase().includes(query) ||
+          inv.id.toLowerCase().includes(query) ||
+          inv.paymentMethod.toLowerCase().includes(query)
+        );
+      }),
+    [sorted, search]
+  );
+
+  const filteredInvoices = filtered;
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
@@ -2862,6 +3099,13 @@ const BillingTab: React.FC<{
           </p>
         </div>
         <div className="flex gap-4 items-center">
+          <input
+            type="text"
+            placeholder="customer name, invoice ID"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-gray-50 border border-gray-100 rounded-[15px] px-4 py-2 text-sm font-semibold shadow-sm outline-none"
+          />
           <select
             value={billingCategoryFilter}
             onChange={(e) => setBillingCategoryFilter(e.target.value)}
@@ -3169,94 +3413,123 @@ const UsersTab: React.FC<any> = ({
   onAdd,
   onEdit,
   onDelete,
-}) => (
-  <div className="bg-white rounded-[15px] p-10 md:p-14 border border-gray-100 shadow-sm">
-    <div className="flex justify-between items-start mb-12 gap-6">
-      <h3 className="text-4xl font-playfair font-semibold text-gray-800">Staff</h3>
+  search,
+  setSearch,
+}) => {
+  const filtered = useMemo(
+    () =>
+      staffUsers.filter((u: any) => {
+        const query = search.toLowerCase();
+        return (
+          u.name.toLowerCase().includes(query) ||
+          u.email.toLowerCase().includes(query) ||
+          u.role.toLowerCase().includes(query)
+        );
+      }),
+    [staffUsers, search]
+  );
 
-      <button
-        onClick={onAdd}
-        className="bg-[#C0392B] text-white px-10 py-4 rounded-[15px] font-medium uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all"
-      >
-        + Add Staff
-      </button>
-    </div>
+  return (
+    <div className="bg-white rounded-[15px] p-10 md:p-14 border border-gray-100 shadow-sm">
+      <div className="flex justify-between items-start mb-12 gap-6">
+        <h3 className="text-4xl font-playfair font-semibold text-gray-800">
+          Staff
+        </h3>
+        <div className="flex gap-4 items-center">
+          <input
+            type="text"
+            placeholder="name, email, or role..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-gray-50 border border-gray-100 rounded-[15px] px-4 py-2 text-sm font-semibold shadow-sm outline-none"
+          />
+          <button
+            onClick={onAdd}
+            className="bg-[#C0392B] text-white px-10 py-4 rounded-[15px] font-medium uppercase text-[11px] shadow-xl border-2 border-[#FFB30E] hover:bg-black transition-all"
+          >
+            + Add Staff
+          </button>
+        </div>
+      </div>
 
-    <div className="overflow-x-auto no-scrollbar">
-      <table className="w-full text-left">
-        <thead>
-          <tr className="border-b border-gray-50">
-            <th className="py-4 px-4 text-[10px] font-medium uppercase text-gray-400">
-              Name
-            </th>
-            <th className="py-4 px-4 text-[10px] font-medium uppercase text-gray-400">
-              Role
-            </th>
-            <th className="py-4 px-4 text-[10px] font-medium uppercase text-gray-400">
-              Outlet
-            </th>
-            <th className="py-4 px-4"></th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {staffUsers.map((u: any) => (
-            <tr
-              key={u.id}
-              className="border-b border-gray-50 hover:bg-gray-50/50"
-            >
-              <td className="py-6 px-4">
-                <p className="font-semibold text-sm text-gray-900">{u.name}</p>
-                <p className="text-[10px] font-medium text-gray-400">
-                  {u.email}
-                </p>
-              </td>
-              <td className="py-6 px-4">
-                <span className="bg-gray-100 text-gray-500 px-3 py-1 rounded-[15px] text-[9px] font-medium uppercase tracking-widest">
-                  {u.role}
-                </span>
-              </td>
-              <td className="py-6 px-4 text-xs font-semibold text-gray-600">
-                {u.outletId === "all"
-                  ? "Universal"
-                  : outlets.find((o: any) => o.id === u.outletId)?.name}
-              </td>
-              <td className="py-6 px-4 text-right">
-                <div className="flex justify-end gap-4">
-                  <button
-                    onClick={() => onEdit(u)}
-                    className="text-[#C0392B] text-[10px] font-medium uppercase hover:underline opacity-60 hover:opacity-100"
-                  >
-                    Edit
-                  </button>
-                  {u.id !== user.id && (
-                    <button
-                      onClick={() => onDelete(u.id, u.role, u.outletId)}
-                      className="text-red-500 text-[10px] font-medium uppercase hover:underline opacity-40 hover:opacity-100"
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-              </td>
+      <div className="overflow-x-auto no-scrollbar">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b border-gray-50">
+              <th className="py-4 px-4 text-[10px] font-medium uppercase text-gray-400">
+                Name
+              </th>
+              <th className="py-4 px-4 text-[10px] font-medium uppercase text-gray-400">
+                Role
+              </th>
+              <th className="py-4 px-4 text-[10px] font-medium uppercase text-gray-400">
+                Outlet
+              </th>
+              <th className="py-4 px-4"></th>
             </tr>
-          ))}
+          </thead>
 
-          {staffUsers.length === 0 && (
-            <tr>
-              <td
-                colSpan={4}
-                className="py-16 text-center text-gray-400 font-semibold"
+          <tbody>
+            {filtered.map((u: any) => (
+              <tr
+                key={u.id}
+                className="border-b border-gray-50 hover:bg-gray-50/50"
               >
-                No staff users
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+                <td className="py-6 px-4">
+                  <p className="font-semibold text-sm text-gray-900">
+                    {u.name}
+                  </p>
+                  <p className="text-[10px] font-medium text-gray-400">
+                    {u.email}
+                  </p>
+                </td>
+                <td className="py-6 px-4">
+                  <span className="bg-gray-100 text-gray-500 px-3 py-1 rounded-[15px] text-[9px] font-medium uppercase tracking-widest">
+                    {u.role}
+                  </span>
+                </td>
+                <td className="py-6 px-4 text-xs font-semibold text-gray-600">
+                  {u.outletId === "all"
+                    ? "Universal"
+                    : outlets.find((o: any) => o.id === u.outletId)?.name}
+                </td>
+                <td className="py-6 px-4 text-right">
+                  <div className="flex justify-end gap-4">
+                    <button
+                      onClick={() => onEdit(u)}
+                      className="text-[#C0392B] text-[10px] font-medium uppercase hover:underline opacity-60 hover:opacity-100"
+                    >
+                      Edit
+                    </button>
+                    {u.id !== user.id && (
+                      <button
+                        onClick={() => onDelete(u.id, u.role, u.outletId)}
+                        className="text-red-500 text-[10px] font-medium uppercase hover:underline opacity-40 hover:opacity-100"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+
+            {filtered.length === 0 && (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="py-16 text-center text-gray-400 font-semibold"
+                >
+                  No staff users
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ManualInvoiceModal: React.FC<any> = ({
   isOpen,

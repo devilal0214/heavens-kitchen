@@ -1,15 +1,46 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Outlet } from "../types";
 
 interface HeroProps {
   outlets: Outlet[];
   onSelectOutlet: (o: Outlet) => void;
+  onNavigate: (view: string) => void;
   userLocation: any;
   locationStatus: string;
   distanceToNearest: number;
 }
 
-const Hero: React.FC<HeroProps> = ({ outlets, onSelectOutlet }) => {
+const Hero: React.FC<HeroProps> = ({ outlets, onSelectOutlet, onNavigate }) => {
+  const [showReserveOutlets, setShowReserveOutlets] = useState(false);
+  const modalRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowReserveOutlets(false);
+    };
+    if (showReserveOutlets) document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [showReserveOutlets]);
+
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (!modalRef.current) return;
+      if (showReserveOutlets && !modalRef.current.contains(e.target as Node)) {
+        setShowReserveOutlets(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [showReserveOutlets]);
+
+  const handleReserveClick = () => setShowReserveOutlets((s) => !s);
+
+  const handleSelectForReserve = (o: any) => {
+    onSelectOutlet(o);
+    setShowReserveOutlets(false);
+    onNavigate("contact");
+  };
+
   return (
     <section className="relative h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-black">
       {/* Cinematic Background Image with Dark Overlay */}
@@ -58,9 +89,15 @@ const Hero: React.FC<HeroProps> = ({ outlets, onSelectOutlet }) => {
 
         {/* Centered CTA */}
         <div
-          className="mt-12 md:mt-16 animate-fade-up"
+          className="mt-12 md:mt-16 animate-fade-up flex flex-col sm:flex-row gap-4 md:gap-6 items-center justify-center"
           style={{ animationDelay: "500ms" }}
         >
+          <button
+            onClick={handleReserveClick}
+            className="group relative bg-white/10 backdrop-blur-sm text-white px-10 md:px-16 py-5 rounded-[15px] font-black uppercase tracking-[0.4em] text-[11px] shadow-[0_20px_50px_rgba(192,57,43,0.2)] hover:bg-white hover:text-black transition-all duration-500 active:scale-95 border-2 border-white/30"
+          >
+            RESERVE A TABLE
+          </button>
           <button
             onClick={() => onSelectOutlet(outlets[0])}
             className="group relative bg-[#C0392B] text-white px-12 md:px-20 py-5 rounded-[15px] font-black uppercase tracking-[0.4em] text-[11px] shadow-[0_20px_50px_rgba(192,57,43,0.3)] hover:bg-white hover:text-black transition-all duration-500 active:scale-95 border-2 border-white/10"
@@ -68,6 +105,45 @@ const Hero: React.FC<HeroProps> = ({ outlets, onSelectOutlet }) => {
             ORDER NOW
           </button>
         </div>
+        {/* Reserve Outlet Picker Modal */}
+        {showReserveOutlets && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <div
+              ref={modalRef}
+              className="relative z-10 w-full max-w-2xl mx-4 bg-white rounded-2xl p-6 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">Choose an outlet</h3>
+                <button
+                  onClick={() => setShowReserveOutlets(false)}
+                  className="text-gray-500 hover:text-gray-800"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {outlets.map((o) => (
+                  <button
+                    key={o.id}
+                    onClick={() => handleSelectForReserve(o)}
+                    className="flex items-center gap-4 p-3 rounded-lg border hover:shadow-md text-left"
+                  >
+                    <img
+                      src={o.thumbnail || o.imageUrl || "/placeholder.png"}
+                      alt={o.name}
+                      className="w-16 h-16 object-cover rounded-md"
+                    />
+                    <div>
+                      <div className="font-semibold">{o.name}</div>
+                      <div className="text-sm text-gray-600">{o.address}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bottom Scrolling Indicator (Visual Element) */}
